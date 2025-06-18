@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useMiniApp } from "@neynar/react";
 import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
+import Image from "next/image";
 
 interface NeynarUser {
   fid: number;
@@ -18,7 +19,7 @@ export function AppHeader() {
   const { context } = useMiniApp();
   const { address, isConnected } = useAccount();
   const [neynarUser, setNeynarUser] = useState<NeynarUser | null>(null);
-  const [treasureCount, setTreasureCount] = useState(0);
+  const [treasureCount] = useState(0);
 
   // Get wallet balance
   const { data: balance } = useBalance({
@@ -71,9 +72,11 @@ export function AppHeader() {
       <div className="flex-shrink-0">
         {profilePicture ? (
           <div className="relative">
-            <img
+            <Image
               src={profilePicture}
               alt="Profile"
+              width={48}
+              height={48}
               className="w-12 h-12 rounded-full border-2 border-white/20 object-cover"
             />
             {/* Online indicator */}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "./ui/Button";
 import { AppHeader } from "./AppHeader";
 
 interface Track {
@@ -83,7 +82,7 @@ export default function MusicFeed() {
       <div className="p-4 pt-4">
         <div className="flex items-center mb-6">
           <div className="text-2xl font-bold">
-            Let's<br />
+            Let&apos;s<br />
             Explore <span className="text-white">Our<br />Records</span>
           </div>
           <div className="ml-auto">
