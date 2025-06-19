@@ -5,6 +5,8 @@ import { useMiniApp } from "@neynar/react";
 import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
 import Image from "next/image";
+import Link from "next/link";
+import sdk from "@farcaster/frame-sdk";
 
 interface NeynarUser {
   fid: number;
@@ -13,13 +15,15 @@ interface NeynarUser {
   pfp_url: string;
   follower_count: number;
   following_count: number;
+  score?: number;
 }
 
 export function AppHeader() {
   const { context } = useMiniApp();
   const { address, isConnected } = useAccount();
   const [neynarUser, setNeynarUser] = useState<NeynarUser | null>(null);
-  const [leaderboardCount] = useState("#777");
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [hasClickedPfp, setHasClickedPfp] = useState(false);
 
   // Get wallet balance
   const { data: balance } = useBalance({
@@ -41,7 +45,6 @@ export function AppHeader() {
         }
       }
     };
-
     fetchNeynarUserData();
   }, [context?.user?.fid]);
 
@@ -59,19 +62,35 @@ export function AppHeader() {
 
   // Get profile picture URL - prefer Neynar data, fallback to context
   const profilePicture = neynarUser?.pfp_url || context?.user?.pfpUrl;
+  const displayName = neynarUser?.display_name || context?.user?.displayName || context?.user?.username;
+  const username = neynarUser?.username || context?.user?.username;
+  const fid = neynarUser?.fid || context?.user?.fid;
+  const score = neynarUser?.score;
 
   return (
-    <div className="flex items-center justify-between p-4 bg-gray-900/90 backdrop-blur-sm">
-      {/* Left: Leaderboard count */}
+    <div className="flex items-center justify-between p-4 bg-gray-900/90 backdrop-blur-sm relative">
+      {/* Left: Leaderboard button */}
       <div className="flex items-center space-x-2 bg-gray-800/80 rounded-full px-3 py-2">
-        <span className="text-lg">🏆</span>
-        <span className="text-white font-medium">{leaderboardCount}</span>
+        <Link
+          href="/leaderboard"
+          className="flex items-center text-white font-medium hover:text-purple-400 transition-colors"
+          aria-label="Leaderboard"
+        >
+          <span className="text-lg mr-1">🏆</span>
+          <span>Leaderboard</span>
+        </Link>
       </div>
 
-      {/* Middle: Farcaster Avatar */}
-      <div className="flex-shrink-0">
+      {/* Middle: Farcaster Avatar (clickable) */}
+      <div className="flex-shrink-0 relative">
         {profilePicture ? (
-          <div className="relative">
+          <div
+            className="relative cursor-pointer"
+            onClick={() => {
+              setIsUserDropdownOpen(!isUserDropdownOpen);
+              setHasClickedPfp(true);
+            }}
+          >
             <Image
               src={profilePicture}
               alt="Profile"
@@ -83,17 +102,47 @@ export function AppHeader() {
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-900"></div>
           </div>
         ) : (
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-2 border-white/20">
+          <div
+            className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-2 border-white/20 cursor-pointer"
+            onClick={() => {
+              setIsUserDropdownOpen(!isUserDropdownOpen);
+              setHasClickedPfp(true);
+            }}
+          >
             <span className="text-white text-lg">👤</span>
+          </div>
+        )}
+        {/* Dropdown */}
+        {isUserDropdownOpen && (
+          <div className="absolute top-full right-0 z-50 w-fit mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="p-3 space-y-2 text-right">
+              <h3
+                className="font-bold text-sm hover:underline cursor-pointer inline-block"
+                onClick={() => fid && sdk.actions.viewProfile({ fid })}
+              >
+                {displayName}
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                @{username}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-500">
+                FID: {fid}
+              </p>
+              {score !== undefined && (
+                <p className="text-xs text-gray-500 dark:text-gray-500">
+                  Neynar Score: {score}
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>
 
       {/* Right: Wallet balance */}
       <div className="flex items-center space-x-2 bg-gray-800/80 rounded-full px-3 py-2">
-        <span className="text-lg">👤</span>
+        <span className="text-lg">👛</span>
         <span className="text-white font-medium">
-          {isConnected && balance 
+          {isConnected && balance
             ? `$${formatBalance(balance.value, balance.decimals)}`
             : '$0.00'
           }

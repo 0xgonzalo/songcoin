@@ -5,6 +5,7 @@ import { APP_NAME } from "~/lib/constants";
 import sdk from "@farcaster/frame-sdk";
 import { useMiniApp } from "@neynar/react";
 import Image from "next/image";
+import Link from "next/link";
 
 type HeaderProps = {
   neynarUser?: {
@@ -26,25 +27,34 @@ export function Header({ neynarUser }: HeaderProps) {
         <div className="text-lg font-light">
           Welcome to {APP_NAME}!
         </div>
-        {context?.user && (
-          <div 
-            className="cursor-pointer"
-            onClick={() => {
-              setIsUserDropdownOpen(!isUserDropdownOpen);
-              setHasClickedPfp(true);
-            }}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/leaderboard"
+            className="flex items-center px-2 py-1 rounded-md bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 text-xs font-semibold hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors"
+            aria-label="Leaderboard"
           >
-            {context.user.pfpUrl && (
-              <Image 
-                src={context.user.pfpUrl} 
-                alt="Profile" 
-                width={48}
-                height={48}
-                className="w-12 h-12 rounded-full border-2 border-white/20 object-cover"
-              />
-            )}
-          </div>
-        )}
+            <span className="mr-1">🏆</span> Leaderboard
+          </Link>
+          {context?.user && (
+            <div 
+              className="cursor-pointer"
+              onClick={() => {
+                setIsUserDropdownOpen(!isUserDropdownOpen);
+                setHasClickedPfp(true);
+              }}
+            >
+              {context.user.pfpUrl && (
+                <Image 
+                  src={context.user.pfpUrl} 
+                  alt="Profile" 
+                  width={48}
+                  height={48}
+                  className="w-12 h-12 rounded-full border-2 border-white/20 object-cover"
+                />
+              )}
+            </div>
+          )}
+        </div>
       </div>
       {context?.user && (
         <>

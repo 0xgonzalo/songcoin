@@ -188,8 +188,6 @@ export default function MusicFeed() {
 
   return (
     <div className="bg-black text-white min-h-screen flex flex-col">
-      {/* App Header */}
-      <AppHeader />
       
       {/* Content Header */}
       <div className="p-4 pt-4">
