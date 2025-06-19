@@ -36,6 +36,7 @@ export function AppHeader() {
         try {
           const response = await fetch(`/api/users?fids=${context.user.fid}`);
           const data = await response.json();
+          
           if (data.users?.[0]) {
             setNeynarUser(data.users[0]);
           }
@@ -60,6 +61,7 @@ export function AppHeader() {
   };
 
   // Get profile picture URL - prefer Neynar data, fallback to context
+  // Note: context uses 'pfpUrl' (camelCase), Neynar API returns 'pfp_url' (snake_case)
   const profilePicture = neynarUser?.pfp_url || context?.user?.pfpUrl;
   const displayName = neynarUser?.display_name || context?.user?.displayName || context?.user?.username;
   const username = neynarUser?.username || context?.user?.username;
