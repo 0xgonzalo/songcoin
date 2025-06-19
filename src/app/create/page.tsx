@@ -373,7 +373,7 @@ export default function CreatePage() {
             <li>• Your files will be uploaded to IPFS</li>
             <li>• A smart contract will be deployed for your coin</li>
             <li>• Your music coin will be available for trading</li>
-            <li>• You'll earn from every transaction</li>
+            <li>• You&apos;ll earn from every transaction</li>
           </ul>
         </div>
       </div>
