@@ -76,7 +76,7 @@ export function AppHeader() {
           aria-label="Leaderboard"
         >
           <span className="text-lg mr-1">🏆</span>
-          <span>Leaderboard</span>
+          <span>#777</span>
         </Link>
       </div>
 
