@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { AppHeader } from "./AppHeader";
 import Image from "next/image";
 
 interface Track {
