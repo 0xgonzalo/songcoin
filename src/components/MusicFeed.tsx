@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AppHeader } from "./AppHeader";
+import Image from "next/image";
 
 interface Track {
   id: string;
@@ -148,7 +149,7 @@ function TradeModal({
         <div className="flex items-center text-gray-400 text-lg font-medium">
           <span>Minimum received</span>
           <span className="ml-auto flex items-center gap-2 text-black font-semibold">
-            <img src="https://i.imgur.com/8Km9tLL.png" alt="token" className="w-6 h-6 rounded-full" />
+            <Image src="https://i.imgur.com/8Km9tLL.png" alt="token" width={24} height={24} className="w-6 h-6 rounded-full" />
             7,482,605
           </span>
         </div>
@@ -165,7 +166,7 @@ export default function MusicFeed() {
   const [tradeModalTrack, setTradeModalTrack] = useState<Track | null>(null);
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [tradeAmount, setTradeAmount] = useState('');
-  const [ethBalance, setEthBalance] = useState('0');
+  const [ethBalance] = useState('0');
 
   const togglePlay = (trackId: string) => {
     setTracks(prevTracks => 
@@ -244,7 +245,7 @@ export default function MusicFeed() {
 
               {/* Album Art */}
               <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-blue-500 rounded-lg mr-3 flex items-center justify-center overflow-hidden">
-                <img src={track.cover} alt={track.title} className="w-full h-full object-cover rounded-lg" />
+                <Image src={track.cover} alt={track.title} width={48} height={48} className="w-full h-full object-cover rounded-lg" />
               </div>
 
               {/* Track Info */}
