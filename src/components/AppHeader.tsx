@@ -19,7 +19,7 @@ export function AppHeader() {
   const { context } = useMiniApp();
   const { address, isConnected } = useAccount();
   const [neynarUser, setNeynarUser] = useState<NeynarUser | null>(null);
-  const [treasureCount] = useState(0);
+  const [leaderboardCount] = useState("#777");
 
   // Get wallet balance
   const { data: balance } = useBalance({
@@ -62,10 +62,10 @@ export function AppHeader() {
 
   return (
     <div className="flex items-center justify-between p-4 bg-gray-900/90 backdrop-blur-sm">
-      {/* Left: Treasure count */}
+      {/* Left: Leaderboard count */}
       <div className="flex items-center space-x-2 bg-gray-800/80 rounded-full px-3 py-2">
         <span className="text-lg">🏆</span>
-        <span className="text-white font-medium">{treasureCount}/5</span>
+        <span className="text-white font-medium">{leaderboardCount}</span>
       </div>
 
       {/* Middle: Farcaster Avatar */}

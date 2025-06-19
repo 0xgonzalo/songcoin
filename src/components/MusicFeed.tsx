@@ -11,35 +11,43 @@ interface Track {
   genre: string;
   cover: string;
   isPlaying: boolean;
+  mcap: string; // Market Cap
+  vol24h: string; // 24h Volume
 }
 
 const mockTracks: Track[] = [
   {
     id: "1",
     title: "Orange Peel",
-    artist: "Oneheart, Reidenshi",
+    artist: "Reidenshi",
     album: "Ambient Collection",
     genre: "Ambient",
     cover: "/api/placeholder/80/80",
     isPlaying: false,
+    mcap: "$1.2M",
+    vol24h: "$120K",
   },
   {
     id: "2",
     title: "Snowfall",
-    artist: "Oneheart",
+    artist: "Oneheart, Reidenshi",
     album: "Easy Listening",
     genre: "Ambient",
     cover: "/api/placeholder/80/80",
     isPlaying: false,
+    mcap: "$2.5M",
+    vol24h: "$250K",
   },
   {
     id: "3",
     title: "Orange Peel",
-    artist: "Oneheart, Reidenshi",
+    artist: "Oneheart",
     album: "Ambient Collection",
     genre: "Ambient",
     cover: "/api/placeholder/80/80",
     isPlaying: true,
+    mcap: "$1.2M",
+    vol24h: "$120K",
   },
   {
     id: "4",
@@ -49,6 +57,8 @@ const mockTracks: Track[] = [
     genre: "Ambient",
     cover: "/api/placeholder/80/80",
     isPlaying: false,
+    mcap: "$800K",
+    vol24h: "$80K",
   },
 ];
 
@@ -58,6 +68,7 @@ export default function MusicFeed() {
   const [selectedGenre, setSelectedGenre] = useState("Ambient");
   const [tracks, setTracks] = useState(mockTracks);
   const [currentTrack, setCurrentTrack] = useState<Track | undefined>(mockTracks.find(t => t.isPlaying));
+  const [expandedTrackId, setExpandedTrackId] = useState<string | null>(null);
 
   const togglePlay = (trackId: string) => {
     setTracks(prevTracks => 
@@ -71,6 +82,10 @@ export default function MusicFeed() {
     if (track) {
       setCurrentTrack(track.isPlaying ? undefined : track);
     }
+  };
+
+  const toggleInfo = (trackId: string) => {
+    setExpandedTrackId(prev => (prev === trackId ? null : trackId));
   };
 
   return (
@@ -112,47 +127,74 @@ export default function MusicFeed() {
       {/* Track List */}
       <div className="flex-1 px-4 pb-24">
         {tracks.filter(track => track.genre === selectedGenre).map((track) => (
-          <div key={track.id} className="flex items-center mb-4 p-3 rounded-lg bg-gray-900/50">
-            {/* Play Button */}
-            <button
-              onClick={() => togglePlay(track.id)}
-              className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3 hover:bg-white/20 transition-colors"
-            >
-              {track.isPlaying ? (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                </svg>
-              )}
-            </button>
-
-            {/* Album Art */}
-            <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-blue-500 rounded-lg mr-3 flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM15.657 6.343a1 1 0 011.414 0A9.972 9.972 0 0119 12a9.972 9.972 0 01-1.929 5.657 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 12c0-2.043-.766-3.905-2.026-5.314a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </div>
-
-            {/* Track Info */}
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-white truncate">{track.title}</div>
-              <div className="text-sm text-gray-400 truncate">{track.artist}</div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center space-x-2 ml-2">
-              <button className="text-gray-400 hover:text-white transition-colors">
-                <span className="text-xs">Info</span>
+          <div key={track.id} className="mb-4">
+            <div className="flex items-center p-3 rounded-lg bg-gray-900/50">
+              {/* Play Button */}
+              <button
+                onClick={() => togglePlay(track.id)}
+                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3 hover:bg-white/20 transition-colors"
+              >
+                {track.isPlaying ? (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                  </svg>
+                )}
               </button>
-              <button className="text-gray-400 hover:text-white transition-colors">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
+
+              {/* Album Art */}
+              <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-blue-500 rounded-lg mr-3 flex items-center justify-center overflow-hidden">
+                <img src={track.cover} alt={track.title} className="w-full h-full object-cover rounded-lg" />
+              </div>
+
+              {/* Track Info */}
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-white truncate">{track.title}</div>
+                <div className="text-sm text-gray-400 truncate">{track.artist}</div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center space-x-2 ml-2">
+                <button
+                  className="text-gray-400 hover:text-white transition-colors"
+                  onClick={() => toggleInfo(track.id)}
+                >
+                  <span className="text-xs">Info</span>
+                  <span className="ml-1">
+                    {expandedTrackId === track.id ? (
+                      <svg className="w-3 h-3 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.293 12.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 9.414l-3.293 3.293a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>
+                    ) : (
+                      <svg className="w-3 h-3 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                    )}
+                  </span>
+                </button>
+              </div>
             </div>
+            {/* Expanded Info Section */}
+            {expandedTrackId === track.id && (
+              <div className="bg-gray-900/80 rounded-b-lg px-3 py-4 flex flex-row gap-8 text-sm border-t border-gray-800">
+                {/* Left column */}
+                <div className="flex-1 min-w-0 ml-16">
+                  <div className="text-gray-400 mb-1">Artist Name</div>
+                  <div className="text-white mb-3">{track.artist}</div>
+                  <div className="text-gray-400 mb-1">Genre</div>
+                  <div className="text-white">{track.genre}</div>
+                </div>
+                {/* Right column */}
+                <div className="flex-1 min-w-0 flex flex-col ml-16 items-end">
+                  <div className="flex flex-col items-end">
+                    <div className="text-gray-400 mb-1">MCAP</div>
+                    <div className="text-white mb-3">{track.mcap}</div>
+                    <div className="text-gray-400 mb-1">24h Vol</div>
+                    <div className="text-white">{track.vol24h}</div>
+                  </div>
+                  <button className="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors self-end">Trade</button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
