@@ -62,6 +62,65 @@ const mockTracks: Track[] = [
   },
 ];
 
+// Featured songs data
+const featuredTracks: Track[] = [
+  {
+    id: "f1",
+    title: "Miradas",
+    artist: "Sol Siete",
+    album: "Peace Collection",
+    genre: "Electronic",
+    cover: "/api/placeholder/120/120",
+    isPlaying: false,
+    mcap: "$4.8K",
+    vol24h: "$480",
+  },
+  {
+    id: "f2",
+    title: "Por amarte Asi",
+    artist: "Nenx",
+    album: "Protest",
+    genre: "Hip Hop",
+    cover: "/api/placeholder/120/120",
+    isPlaying: false,
+    mcap: "$21.6K",
+    vol24h: "$2.1K",
+  },
+  {
+    id: "f3",
+    title: "Vin Diesel",
+    artist: "GyiAMV",
+    album: "Action",
+    genre: "Trap",
+    cover: "/api/placeholder/120/120",
+    isPlaying: false,
+    mcap: "$25.0K",
+    vol24h: "$2.5K",
+  },
+  {
+    id: "f4",
+    title: "Midnight Vibes",
+    artist: "SynthWave",
+    album: "Neon Dreams",
+    genre: "Synthwave",
+    cover: "/api/placeholder/120/120",
+    isPlaying: false,
+    mcap: "$15.2K",
+    vol24h: "$1.8K",
+  },
+  {
+    id: "f5",
+    title: "Bass Drop",
+    artist: "ElectroMix",
+    album: "Club Hits",
+    genre: "EDM",
+    cover: "/api/placeholder/120/120",
+    isPlaying: false,
+    mcap: "$32.1K",
+    vol24h: "$3.2K",
+  },
+];
+
 const genres = ["Ambient", "Lo-fi", "Synthwave", "Chillhop", "Downtempo"];
 
 function TradeModal({
@@ -157,6 +216,61 @@ function TradeModal({
   );
 }
 
+function FeaturedSongs({ tracks }: { tracks: Track[] }) {
+  return (
+    <div className="mb-6">
+      <div className="flex overflow-x-auto scrollbar-hide space-x-4 pb-4">
+        {tracks.map((track) => (
+          <div
+            key={track.id}
+            className="flex-shrink-0 bg-gray-900/50 rounded-xl p-4 border border-gray-800 hover:border-gray-700 transition-colors"
+            style={{ minWidth: '280px' }}
+          >
+            {/* Track Image */}
+            <div className="w-full h-32 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg mb-3 overflow-hidden">
+              <Image 
+                src={track.cover} 
+                alt={track.title} 
+                width={120} 
+                height={120} 
+                className="w-full h-full object-cover"
+              />
+            </div>
+            
+            {/* Track Info */}
+            <div className="space-y-2">
+              <div>
+                <h4 className="font-medium text-white text-sm truncate">{track.title}</h4>
+                <p className="text-xs text-gray-400 truncate">{track.artist}</p>
+              </div>
+              
+              {/* Stats Row */}
+              <div className="flex justify-between items-center text-xs">
+                <div>
+                  <span className="text-gray-400">market cap: </span>
+                  <span className="text-green-400 font-medium">{track.mcap}</span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center text-xs">
+                <div>
+                  <span className="text-gray-400">Vol 24hs: </span>
+                  <span className="text-white font-medium">{track.vol24h}</span>
+                </div>
+                <div>
+                  <span className="bg-purple-600 text-white px-2 py-1 rounded-full text-xs">
+                    {track.genre}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function MusicFeed() {
   const [selectedGenre, setSelectedGenre] = useState("Ambient");
   const [tracks, setTracks] = useState(mockTracks);
@@ -203,6 +317,9 @@ export default function MusicFeed() {
             </div>
           </div>
         </div>
+
+        {/* Featured Songs Section */}
+        <FeaturedSongs tracks={featuredTracks} />
 
         {/* Genre Selector */}
         <div className="mb-6">
