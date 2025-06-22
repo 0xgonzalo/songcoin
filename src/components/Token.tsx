@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { getTokenById, type TokenData } from "~/lib/tracks";
+import { getTokenById } from "~/lib/tracks";
 
 export default function Token({ tokenId = "dominga" }: { tokenId?: string }) {
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
@@ -17,7 +17,7 @@ export default function Token({ tokenId = "dominga" }: { tokenId?: string }) {
       <div className="bg-black text-white min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-2">Token Not Found</h1>
-          <p className="text-gray-400">The token "{tokenId}" does not exist.</p>
+          <p className="text-gray-400">The token &quot;{tokenId}&quot; does not exist.</p>
         </div>
       </div>
     );
