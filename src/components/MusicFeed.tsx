@@ -2,18 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-
-interface Track {
-  id: string;
-  title: string;
-  artist: string;
-  album: string;
-  genre: string;
-  cover: string;
-  isPlaying: boolean;
-  mcap: string; 
-  vol24h: string; 
-}
+import TradeModal from "./home/TradeModal";
+import { featuredTracks, type Track } from "~/lib/tracks";
 
 const mockTracks: Track[] = [
   {
@@ -62,170 +52,22 @@ const mockTracks: Track[] = [
   },
 ];
 
-// Featured songs data
-const featuredTracks: Track[] = [
-  {
-    id: "f1",
-    title: "Miradas",
-    artist: "Sol Siete",
-    album: "Peace Collection",
-    genre: "Electronic",
-    cover: "/api/placeholder/120/120",
-    isPlaying: false,
-    mcap: "$4.8K",
-    vol24h: "$480",
-  },
-  {
-    id: "f2",
-    title: "Por amarte Asi",
-    artist: "Nenx",
-    album: "Protest",
-    genre: "Hip Hop",
-    cover: "/api/placeholder/120/120",
-    isPlaying: false,
-    mcap: "$21.6K",
-    vol24h: "$2.1K",
-  },
-  {
-    id: "f3",
-    title: "Vin Diesel",
-    artist: "GyiAMV",
-    album: "Action",
-    genre: "Trap",
-    cover: "/api/placeholder/120/120",
-    isPlaying: false,
-    mcap: "$25.0K",
-    vol24h: "$2.5K",
-  },
-  {
-    id: "f4",
-    title: "Midnight Vibes",
-    artist: "SynthWave",
-    album: "Neon Dreams",
-    genre: "Synthwave",
-    cover: "/api/placeholder/120/120",
-    isPlaying: false,
-    mcap: "$15.2K",
-    vol24h: "$1.8K",
-  },
-  {
-    id: "f5",
-    title: "Bass Drop",
-    artist: "ElectroMix",
-    album: "Club Hits",
-    genre: "EDM",
-    cover: "/api/placeholder/120/120",
-    isPlaying: false,
-    mcap: "$32.1K",
-    vol24h: "$3.2K",
-  },
-];
+// Note: featuredTracks is now imported from ~/lib/tracks
 
 const genres = ["Ambient", "Lo-fi", "Synthwave", "Chillhop", "Downtempo"];
 
-function TradeModal({
-  open,
-  onClose,
-  tradeType,
-  setTradeType,
-  tradeAmount,
-  setTradeAmount,
-  ethBalance
-}: {
-  open: boolean;
-  onClose: () => void;
-  tradeType: 'buy' | 'sell';
-  setTradeType: (type: 'buy' | 'sell') => void;
-  tradeAmount: string;
-  setTradeAmount: (amount: string) => void;
-  ethBalance: string;
-}) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl max-w-xs md:max-w-md mx-4 md:mx-8 p-6 md:p-10 relative" onClick={e => e.stopPropagation()}>
-        {/* Close button */}
-        <button className="absolute top-4 right-4 text-gray-400 hover:text-black text-2xl" onClick={onClose}>&times;</button>
-        {/* Buy/Sell toggle and balance */}
-        <div className="flex items-center mb-4">
-          <button
-            className={`px-5 py-2 rounded-xl font-semibold mr-2 ${tradeType === 'buy' ? 'bg-green-500 text-white' : 'bg-gray-100 text-black'}`}
-            onClick={() => setTradeType('buy')}
-          >
-            Buy
-          </button>
-          <button
-            className={`px-5 py-2 rounded-xl font-semibold ${tradeType === 'sell' ? 'text-white' : 'bg-gray-100 text-black'}`}
-            style={tradeType === 'sell' ? { backgroundColor: 'color(display-p3 0.94 0.03 0.93)' } : {}}
-            onClick={() => setTradeType('sell')}
-          >
-            Sell
-          </button>
-          <span className="ml-auto pl-4 text-gray-400 font-medium">Balance <span className="text-black font-bold">{ethBalance} ETH</span></span>
-        </div>
-        {/* Input */}
-        <div className="bg-gray-100 rounded-xl flex items-center px-4 py-6 mb-4">
-          <input
-            type="text"
-            className="bg-transparent text-3xl font-semibold flex-1 outline-none border-none text-black placeholder:text-gray-400"
-            placeholder="0,000111"
-            value={tradeAmount}
-            onChange={e => setTradeAmount(e.target.value)}
-          />
-          <div className="flex items-center ml-2 bg-white rounded-xl px-3 py-2 border border-gray-200">
-            <span className="text-blue-600 text-xl mr-1">⎯</span> <br />
-            <span className="font-semibold text-black">ETH</span>
-            <svg className="w-4 h-4 ml-1 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-          </div>
-        </div>
-        {/* Quick amount buttons or percent options */}
-        {tradeType === 'buy' ? (
-          <div className="mb-6">
-            <select className="w-full bg-white border border-gray-200 rounded-xl py-3 font-semibold text-gray-800">
-              <option value="0.001">0.001 ETH</option>
-              <option value="0.01">0.01 ETH</option>
-              <option value="0.1">0.1 ETH</option>
-              <option value="max">Max</option>
-            </select>
-          </div>
-        ) : (
-          <div className="flex gap-2 mb-6">
-            <button className="flex-1 bg-white border border-gray-200 rounded-xl py-3 font-semibold text-gray-800">25%</button>
-            <button className="flex-1 bg-white border border-gray-200 rounded-xl py-3 font-semibold text-gray-800">50%</button>
-            <button className="flex-1 bg-white border border-gray-200 rounded-xl py-3 font-semibold text-gray-800">75%</button>
-            <button className="flex-1 bg-white border border-gray-200 rounded-xl py-3 font-semibold text-gray-800">100%</button>
-          </div>
-        )}
-        {/* Buy/Sell button */}
-        <button
-          className={`w-full text-white text-xl font-semibold py-4 rounded-xl mb-4 ${tradeType === 'buy' ? 'bg-green-500 hover:bg-green-600' : ''}`}
-          style={tradeType === 'sell' ? { backgroundColor: 'color(display-p3 0.94 0.03 0.93)' } : {}}
-        >
-          {tradeType === 'buy' ? 'Buy' : 'Sell'}
-        </button>
-        {/* Minimum received */}
-        <div className="flex items-center text-gray-400 text-lg font-medium">
-          <span>Minimum received</span>
-          <span className="ml-auto flex items-center gap-2 text-black font-semibold">
-            <Image src="https://i.imgur.com/8Km9tLL.png" alt="token" width={24} height={24} className="w-6 h-6 rounded-full" />
-            7,482,605
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function FeaturedSongs({ tracks }: { tracks: Track[] }) {
+function FeaturedSongs({ tracks, onTrackClick }: { tracks: Track[]; onTrackClick: (trackId: string) => void }) {
   return (
     <div className="mb-6">
-              <div className="flex overflow-x-auto scrollbar-hide space-x-4 pb-4">
-          {tracks.map((track) => (
-            <div
-              key={track.id}
-              className="flex-shrink-0 bg-gray-900/50 rounded-xl p-4 border border-gray-800 hover:border-gray-700 transition-colors flex gap-4"
-              style={{ minWidth: '300px' }}
-            >
+      <h3 className="text-lg font-semibold text-white mb-4">Featured Songs</h3>
+      <div className="flex overflow-x-auto scrollbar-hide space-x-4 pb-4">
+        {tracks.map((track) => (
+          <div
+            key={track.id}
+            className="flex-shrink-0 bg-gray-900/50 rounded-xl p-4 border border-gray-800 hover:border-gray-700 transition-colors flex gap-4 cursor-pointer"
+            style={{ minWidth: '300px' }}
+            onClick={() => onTrackClick(track.id)}
+          >
               {/* Track Image - First Column */}
               <div className="w-32 h-32 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg overflow-hidden flex-shrink-0">
                 <Image 
@@ -296,6 +138,11 @@ export default function MusicFeed() {
     setExpandedTrackId(prev => (prev === trackId ? null : trackId));
   };
 
+  const handleTrackClick = (trackId: string) => {
+    // Navigate to the token page
+    window.location.href = `/token/${trackId}`;
+  };
+
   return (
     <div className="bg-black text-white min-h-screen flex flex-col">
       
@@ -316,7 +163,7 @@ export default function MusicFeed() {
         </div>
 
         {/* Featured Songs Section */}
-        <FeaturedSongs tracks={featuredTracks} />
+        <FeaturedSongs tracks={featuredTracks} onTrackClick={handleTrackClick} />
 
         {/* Genre Selector */}
         <div className="mb-6">
