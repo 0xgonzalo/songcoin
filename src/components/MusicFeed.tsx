@@ -219,54 +219,51 @@ function TradeModal({
 function FeaturedSongs({ tracks }: { tracks: Track[] }) {
   return (
     <div className="mb-6">
-      <div className="flex overflow-x-auto scrollbar-hide space-x-4 pb-4">
-        {tracks.map((track) => (
-          <div
-            key={track.id}
-            className="flex-shrink-0 bg-gray-900/50 rounded-xl p-4 border border-gray-800 hover:border-gray-700 transition-colors"
-            style={{ minWidth: '280px' }}
-          >
-            {/* Track Image */}
-            <div className="w-full h-32 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg mb-3 overflow-hidden">
-              <Image 
-                src={track.cover} 
-                alt={track.title} 
-                width={120} 
-                height={120} 
-                className="w-full h-full object-cover"
-              />
-            </div>
-            
-            {/* Track Info */}
-            <div className="space-y-2">
-              <div>
-                <h4 className="font-medium text-white text-sm truncate">{track.title}</h4>
-                <p className="text-xs text-gray-400 truncate">{track.artist}</p>
+              <div className="flex overflow-x-auto scrollbar-hide space-x-4 pb-4">
+          {tracks.map((track) => (
+            <div
+              key={track.id}
+              className="flex-shrink-0 bg-gray-900/50 rounded-xl p-4 border border-gray-800 hover:border-gray-700 transition-colors flex gap-4"
+              style={{ minWidth: '300px' }}
+            >
+              {/* Track Image - First Column */}
+              <div className="w-32 h-32 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg overflow-hidden flex-shrink-0">
+                <Image 
+                  src={track.cover} 
+                  alt={track.title} 
+                  width={120} 
+                  height={120} 
+                  className="w-full h-full object-cover"
+                />
               </div>
               
-              {/* Stats Row */}
-              <div className="flex justify-between items-center text-xs">
+              {/* Track Info - Second Column */}
+              <div className="flex-1 space-y-2 min-w-0">
                 <div>
-                  <span className="text-gray-400">market cap: </span>
-                  <span className="text-green-400 font-medium">{track.mcap}</span>
+                  <h4 className="font-medium text-white text-md truncate">{track.title}</h4>
+                  <p className="text-xs text-gray-400 truncate">{track.artist}</p>
                 </div>
-              </div>
-              
-              <div className="flex justify-between items-center text-xs">
-                <div>
-                  <span className="text-gray-400">Vol 24hs: </span>
-                  <span className="text-white font-medium">{track.vol24h}</span>
-                </div>
-                <div>
-                  <span className="bg-purple-600 text-white px-2 py-1 rounded-full text-xs">
-                    {track.genre}
-                  </span>
+                
+                {/* Stats */}
+                <div className="space-y-1">
+                  <div className="text-xs">
+                    <span className="text-gray-400">market cap: </span>
+                    <span className="text-green-400 font-medium">{track.mcap}</span>
+                  </div>
+                  <div className="text-xs">
+                    <span className="text-gray-400">Vol 24hs: </span>
+                    <span className="text-white font-medium">{track.vol24h}</span>
+                  </div>
+                  <div className="pt-1">
+                    <span className="bg-purple-600 text-white px-2 py-1 rounded-full text-xs">
+                      {track.genre}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
     </div>
   );
 }
