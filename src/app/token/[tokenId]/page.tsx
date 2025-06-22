@@ -3,13 +3,14 @@ import { Metadata } from "next";
 import { getTokenById } from "~/lib/tracks";
 
 interface TokenPageProps {
-  params: {
+  params: Promise<{
     tokenId: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({ params }: TokenPageProps): Promise<Metadata> {
-  const token = getTokenById(params.tokenId);
+  const { tokenId } = await params;
+  const token = getTokenById(tokenId);
   
   if (!token) {
     return {
@@ -24,6 +25,7 @@ export async function generateMetadata({ params }: TokenPageProps): Promise<Meta
   };
 }
 
-export default function TokenPage({ params }: TokenPageProps) {
-  return <Token tokenId={params.tokenId} />;
+export default async function TokenPage({ params }: TokenPageProps) {
+  const { tokenId } = await params;
+  return <Token tokenId={tokenId} />;
 } 
