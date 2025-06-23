@@ -6,6 +6,8 @@ import { Providers } from "~/app/providers";
 import { APP_NAME, APP_DESCRIPTION } from "~/lib/constants";
 import { AppHeader } from "~/components/AppHeader";
 import { AppFooter } from "~/components/AppFooter";
+import { AudioPlayerProvider } from "../components/providers/AudioPlayerProvider";
+import AudioPlayerBar from "../components/AudioPlayerBar";
 
 export const metadata: Metadata = {
   title: APP_NAME,
@@ -22,11 +24,16 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Providers session={session}>
-          <AppHeader />
-          {children}
-          <AppFooter />
-        </Providers>
+        <AudioPlayerProvider>
+          <Providers session={session}>
+            <AppHeader />
+            <div className="pb-16">
+              {children}
+            </div>
+            <AppFooter />
+            <AudioPlayerBar />
+          </Providers>
+        </AudioPlayerProvider>
       </body>
     </html>
   );

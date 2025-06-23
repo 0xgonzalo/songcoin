@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import TradeModal from "./home/TradeModal";
 import { featuredTracks, type Track } from "~/lib/tracks";
+import { useAudioPlayer } from "./providers/AudioPlayerProvider";
 
 const mockTracks: Track[] = [
   {
@@ -57,6 +58,16 @@ const mockTracks: Track[] = [
 const genres = ["Ambient", "Lo-fi", "Synthwave", "Chillhop", "Downtempo"];
 
 function FeaturedSongs({ tracks, onTrackClick }: { tracks: Track[]; onTrackClick: (trackId: string) => void }) {
+  const { currentTrack, isPlaying, toggle } = useAudioPlayer();
+
+  const handleImageEnter = (track: Track) => {
+    toggle(track);
+  };
+
+  const handleImageLeave = () => {
+    // No-op for leave (optional: pause if you want hover to always pause)
+  };
+
   return (
     <div className="mb-6">
       <h3 className="text-lg font-semibold text-white mb-4">Featured Songs</h3>
@@ -64,48 +75,68 @@ function FeaturedSongs({ tracks, onTrackClick }: { tracks: Track[]; onTrackClick
         {tracks.map((track) => (
           <div
             key={track.id}
-            className="flex-shrink-0 bg-gray-900/50 rounded-xl p-4 border border-gray-800 hover:border-gray-700 transition-colors flex gap-4 cursor-pointer"
+            className="flex-shrink-0 bg-gray-900/50 rounded-xl p-4 border border-gray-800 hover:border-gray-700 transition-colors flex gap-4 cursor-pointer group"
             style={{ minWidth: '300px' }}
-            onClick={() => onTrackClick(track.id)}
           >
-              {/* Track Image - First Column */}
-              <div className="w-32 h-32 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg overflow-hidden flex-shrink-0">
-                <Image 
-                  src={track.cover} 
-                  alt={track.title} 
-                  width={120} 
-                  height={120} 
-                  className="w-full h-full object-cover"
-                />
+            {/* Track Image - First Column */}
+            <div
+              className="w-32 h-32 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg overflow-hidden flex-shrink-0 relative"
+              onMouseEnter={() => handleImageEnter(track)}
+              onMouseLeave={handleImageLeave}
+            >
+              <Image 
+                src={track.cover} 
+                alt={track.title} 
+                width={120} 
+                height={120} 
+                className="w-full h-full object-cover"
+              />
+              {/* Play/Pause Overlay */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                {currentTrack && isPlaying && currentTrack.id === track.id ? (
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <rect x="6" y="4" width="4" height="16" rx="2" fill="currentColor" />
+                    <rect x="14" y="4" width="4" height="16" rx="2" fill="currentColor" />
+                  </svg>
+                ) : (
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <polygon points="5,3 19,12 5,21" fill="currentColor" />
+                  </svg>
+                )}
               </div>
-              
-              {/* Track Info - Second Column */}
-              <div className="flex-1 space-y-2 min-w-0">
-                <div>
-                  <h4 className="font-medium text-white text-md truncate">{track.title}</h4>
-                  <p className="text-xs text-gray-400 truncate">{track.artist}</p>
+            </div>
+            {/* Track Info - Second Column, links to token page */}
+            <div
+              className="flex-1 space-y-2 min-w-0"
+              onClick={() => onTrackClick(track.id)}
+              role="button"
+              tabIndex={0}
+              style={{ cursor: 'pointer' }}
+            >
+              <div>
+                <h4 className="font-medium text-white text-md truncate">{track.title}</h4>
+                <p className="text-xs text-gray-400 truncate">{track.artist}</p>
+              </div>
+              {/* Stats */}
+              <div className="space-y-1">
+                <div className="text-xs">
+                  <span className="text-gray-400">market cap: </span>
+                  <span className="text-green-400 font-medium">{track.mcap}</span>
                 </div>
-                
-                {/* Stats */}
-                <div className="space-y-1">
-                  <div className="text-xs">
-                    <span className="text-gray-400">market cap: </span>
-                    <span className="text-green-400 font-medium">{track.mcap}</span>
-                  </div>
-                  <div className="text-xs">
-                    <span className="text-gray-400">Vol 24hs: </span>
-                    <span className="text-white font-medium">{track.vol24h}</span>
-                  </div>
-                  <div className="pt-1">
-                    <span className="bg-purple-600 text-white px-2 py-1 rounded-full text-xs">
-                      {track.genre}
-                    </span>
-                  </div>
+                <div className="text-xs">
+                  <span className="text-gray-400">Vol 24hs: </span>
+                  <span className="text-white font-medium">{track.vol24h}</span>
+                </div>
+                <div className="pt-1">
+                  <span className="bg-purple-600 text-white px-2 py-1 rounded-full text-xs">
+                    {track.genre}
+                  </span>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -113,25 +144,15 @@ function FeaturedSongs({ tracks, onTrackClick }: { tracks: Track[]; onTrackClick
 export default function MusicFeed() {
   const [selectedGenre, setSelectedGenre] = useState("Ambient");
   const [tracks, setTracks] = useState(mockTracks);
-  const [currentTrack, setCurrentTrack] = useState<Track | undefined>(mockTracks.find(t => t.isPlaying));
   const [expandedTrackId, setExpandedTrackId] = useState<string | null>(null);
   const [tradeModalTrack, setTradeModalTrack] = useState<Track | null>(null);
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [tradeAmount, setTradeAmount] = useState('');
-  const [ethBalance] = useState('0');
+  const { currentTrack, isPlaying, toggle } = useAudioPlayer();
 
   const togglePlay = (trackId: string) => {
-    setTracks(prevTracks => 
-      prevTracks.map(track => ({
-        ...track,
-        isPlaying: track.id === trackId ? !track.isPlaying : false
-      }))
-    );
-    
     const track = tracks.find(t => t.id === trackId);
-    if (track) {
-      setCurrentTrack(track.isPlaying ? undefined : track);
-    }
+    if (track) toggle(track);
   };
 
   const toggleInfo = (trackId: string) => {
@@ -153,7 +174,10 @@ export default function MusicFeed() {
             Listen,<br />
             Explore <span className="text-white">and<br />Trade Records</span>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-4">
+            <div className="hidden sm:block">
+              <Image src="/waves.gif" alt="Waves" width={64} height={40} className="object-contain" />
+            </div>
             <div className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
@@ -255,57 +279,6 @@ export default function MusicFeed() {
         ))}
       </div>
 
-      {/* Bottom Player */}
-      {currentTrack && (
-        <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 p-4">
-          <div className="flex items-center mb-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-blue-500 rounded-lg mr-3 flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-white truncate">{currentTrack.title}</div>
-              <div className="text-sm text-gray-400 truncate">{currentTrack.artist}</div>
-            </div>
-            <button className="text-gray-400 hover:text-white transition-colors">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="w-full bg-gray-700 rounded-full h-1 mb-3">
-            <div className="bg-white h-1 rounded-full" style={{ width: '45%' }}></div>
-          </div>
-
-          {/* Controls */}
-          <div className="flex items-center justify-center space-x-6">
-            <button className="text-gray-400 hover:text-white transition-colors">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 9H17a1 1 0 110 2h-5.586l3.293 3.293a1 1 0 010 1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-            <button className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:bg-gray-200 transition-colors">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </button>
-            <button className="text-gray-400 hover:text-white transition-colors">
-              <svg className="w-5 h-5 transform rotate-180" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 9H17a1 1 0 110 2h-5.586l3.293 3.293a1 1 0 010 1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-            <button className="text-gray-400 hover:text-white transition-colors">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
-
       <TradeModal
         open={!!tradeModalTrack}
         onClose={() => setTradeModalTrack(null)}
@@ -313,7 +286,7 @@ export default function MusicFeed() {
         setTradeType={setTradeType}
         tradeAmount={tradeAmount}
         setTradeAmount={setTradeAmount}
-        ethBalance={ethBalance}
+        ethBalance={"0"}
       />
     </div>
   );

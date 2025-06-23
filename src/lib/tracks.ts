@@ -8,6 +8,7 @@ export interface Track {
   isPlaying: boolean;
   mcap: string; 
   vol24h: string; 
+  audio?: string;
 }
 
 export interface TokenData {
@@ -25,6 +26,7 @@ export interface TokenData {
     username: string;
     avatar: string;
   };
+  audio?: string;
 }
 
 // Featured tracks data for home page cards
@@ -39,6 +41,7 @@ export const featuredTracks: Track[] = [
     isPlaying: false,
     mcap: "$4.8K",
     vol24h: "$480",
+    audio: "/music/WhoMadeWho & Blue Hawaii - Sweet Cuddles (Selim Sivade, Baron FR, Meloko, Konvex FR Remix).mp3"
   },
   {
     id: "por-amarte-asi",
@@ -50,6 +53,7 @@ export const featuredTracks: Track[] = [
     isPlaying: false,
     mcap: "$21.6K",
     vol24h: "$2.1K",
+    audio: "/music/Volon - Going Up (Original Mix).mp3"
   },
   {
     id: "vin-diesel",
@@ -61,10 +65,11 @@ export const featuredTracks: Track[] = [
     isPlaying: false,
     mcap: "$25.0K",
     vol24h: "$2.5K",
+    audio: "/music/Volon - 2Pacman (Original Mix).mp3"
   },
   {
     id: "midnight-vibes",
-    title: "Midnight Vibes",
+    title: "Super Midnight Vibes",
     artist: "SynthWave",
     album: "Neon Dreams",
     genre: "Synthwave",
@@ -72,6 +77,7 @@ export const featuredTracks: Track[] = [
     isPlaying: false,
     mcap: "$15.2K",
     vol24h: "$1.8K",
+    audio: "/music/Voch - Illusion (Extended Mix).mp3"
   },
   {
     id: "bass-drop",
@@ -83,6 +89,19 @@ export const featuredTracks: Track[] = [
     isPlaying: false,
     mcap: "$32.1K",
     vol24h: "$3.2K",
+    audio: "/music/Vincent Jarroux - Phoenix.mp3"
+  },
+  {
+    id: "dominga",
+    title: "Dominga",
+    artist: "santiagoruau",
+    album: "",
+    genre: "Electronic",
+    cover: "/api/placeholder/120/120",
+    isPlaying: false,
+    mcap: "$191.62",
+    vol24h: "$2.53",
+    audio: "/music/Villamizar, Fenky, Gustavo Dominguez - Hold You (Original Mix).mp3"
   },
 ];
 
@@ -102,7 +121,8 @@ export const tokenData: Record<string, TokenData> = {
     creator: {
       username: "santiagoruau",
       avatar: "/api/placeholder/40/40"
-    }
+    },
+    audio: "/music/Villamizar, Fenky, Gustavo Dominguez - Hold You (Original Mix).mp3"
   },
   "miradas": {
     id: "miradas",
@@ -118,7 +138,8 @@ export const tokenData: Record<string, TokenData> = {
     creator: {
       username: "solsiete",
       avatar: "/api/placeholder/40/40"
-    }
+    },
+    audio: "/music/WhoMadeWho & Blue Hawaii - Sweet Cuddles (Selim Sivade, Baron FR, Meloko, Konvex FR Remix).mp3"
   },
   "por-amarte-asi": {
     id: "por-amarte-asi",
@@ -134,7 +155,8 @@ export const tokenData: Record<string, TokenData> = {
     creator: {
       username: "nenx_music",
       avatar: "/api/placeholder/40/40"
-    }
+    },
+    audio: "/music/Volon - Going Up (Original Mix).mp3"
   },
   "vin-diesel": {
     id: "vin-diesel",
@@ -150,7 +172,8 @@ export const tokenData: Record<string, TokenData> = {
     creator: {
       username: "gyiamv",
       avatar: "/api/placeholder/40/40"
-    }
+    },
+    audio: "/music/Volon - 2Pacman (Original Mix).mp3"
   },
   "midnight-vibes": {
     id: "midnight-vibes",
@@ -166,7 +189,8 @@ export const tokenData: Record<string, TokenData> = {
     creator: {
       username: "synthwave_official",
       avatar: "/api/placeholder/40/40"
-    }
+    },
+    audio: "/music/Voch - Illusion (Extended Mix).mp3"
   },
   "bass-drop": {
     id: "bass-drop",
@@ -182,7 +206,8 @@ export const tokenData: Record<string, TokenData> = {
     creator: {
       username: "electromix_dj",
       avatar: "/api/placeholder/40/40"
-    }
+    },
+    audio: "/music/Vincent Jarroux - Phoenix.mp3"
   },
 };
 
