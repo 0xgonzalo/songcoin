@@ -26,6 +26,17 @@ export function AppHeader() {
   const { context } = useMiniApp();
   const [neynarUser, setNeynarUser] = useState<NeynarUser | null>(null);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  
+  // Development mode: use a test FID when not in Farcaster context
+  const isDev = process.env.NODE_ENV === 'development';
+  const testFid = 3; // Dan Romero's FID for testing
+  const effectiveFid = context?.user?.fid || (isDev ? testFid : null);
+  const effectiveUser = context?.user || (isDev ? { 
+    fid: testFid, 
+    username: 'test-user', 
+    displayName: 'Test User',
+    pfpUrl: null 
+  } : null);
 
   // Get the Farcaster user's primary ETH address for balance lookup
   const farcasterUserAddress = neynarUser?.verified_addresses?.eth_addresses?.[0] as `0x${string}` | undefined;
@@ -38,9 +49,9 @@ export function AppHeader() {
   // Fetch Neynar user data when context is available
   useEffect(() => {
     const fetchNeynarUserData = async () => {
-      if (context?.user?.fid) {
+      if (effectiveFid) {
         try {
-          const response = await fetch(`/api/users?fids=${context.user.fid}`);
+          const response = await fetch(`/api/users?fids=${effectiveFid}`);
           const data = await response.json();
           
           if (data.users?.[0]) {
@@ -52,7 +63,7 @@ export function AppHeader() {
       }
     };
     fetchNeynarUserData();
-  }, [context?.user?.fid]);
+  }, [effectiveFid]);
 
   // Format wallet balance - convert ETH to USD (mock rate)
   const formatBalance = (balance: bigint | undefined, decimals: number = 18) => {
@@ -68,14 +79,21 @@ export function AppHeader() {
 
   // Get profile picture URL - prefer Neynar data, fallback to context
   // Note: context uses 'pfpUrl' (camelCase), Neynar API returns 'pfp_url' (snake_case)
-  const profilePicture = neynarUser?.pfp_url || context?.user?.pfpUrl;
-  const displayName = neynarUser?.display_name || context?.user?.displayName || context?.user?.username;
-  const username = neynarUser?.username || context?.user?.username;
-  const fid = neynarUser?.fid || context?.user?.fid;
+  const profilePicture = neynarUser?.pfp_url || effectiveUser?.pfpUrl;
+  const displayName = neynarUser?.display_name || effectiveUser?.displayName || effectiveUser?.username;
+  const username = neynarUser?.username || effectiveUser?.username;
+  const fid = neynarUser?.fid || effectiveUser?.fid;
   const score = neynarUser?.score;
 
   return (
     <div className="flex items-center justify-between p-4 bg-gray-900/90 backdrop-blur-sm relative">
+      {/* Development Mode Indicator */}
+      {isDev && !context?.user && (
+        <div className="absolute top-0 left-0 right-0 bg-yellow-600 text-black text-xs px-2 py-1 text-center">
+          DEV MODE - Using test FID: {testFid}
+        </div>
+      )}
+      
       {/* Left: Leaderboard button */}
       <div className="flex items-center space-x-2 bg-gray-800/80 rounded-full px-3 py-2">
         <Link

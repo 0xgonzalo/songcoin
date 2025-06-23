@@ -12,13 +12,16 @@ interface NeynarUser {
   pfp_url: string;
   follower_count: number;
   following_count: number;
-  bio?: {
-    text: string;
+  profile?: {
+    bio?: {
+      text: string;
+    };
   };
   verified_addresses?: {
     eth_addresses: string[];
     sol_addresses: string[];
   };
+  score?: number;
 }
 
 interface Coin {
@@ -102,15 +105,26 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabType>('created');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Development mode: use a test FID when not in Farcaster context
+  const isDev = process.env.NODE_ENV === 'development';
+  const testFid = 3; // Dan Romero's FID for testing
+  const effectiveFid = context?.user?.fid || (isDev ? testFid : null);
+  const effectiveUser = context?.user || (isDev ? { 
+    fid: testFid, 
+    username: 'test-user', 
+    displayName: 'Test User',
+    pfpUrl: null 
+  } : null);
+
   // Fetch Neynar user data and leaderboard rank
   useEffect(() => {
     const fetchUserData = async () => {
-      if (context?.user?.fid) {
+      if (effectiveFid) {
         try {
           setIsLoading(true);
           
           // Fetch Neynar user data
-          const userResponse = await fetch(`/api/users?fids=${context.user.fid}`);
+          const userResponse = await fetch(`/api/users?fids=${effectiveFid}`);
           const userData = await userResponse.json();
           if (userData.users?.[0]) {
             setNeynarUser(userData.users[0]);
@@ -129,7 +143,7 @@ export default function ProfilePage() {
     };
 
     fetchUserData();
-  }, [context?.user?.fid]);
+  }, [effectiveFid]);
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -188,7 +202,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!context?.user) {
+  if (!effectiveUser) {
     return (
       <main className="max-w-md mx-auto w-full px-4 py-6 pb-24 bg-black min-h-screen">
         <div className="flex items-center mb-6">
@@ -219,12 +233,12 @@ export default function ProfilePage() {
     );
   }
 
-  const profilePicture = neynarUser?.pfp_url || context.user.pfpUrl;
-  const displayName = neynarUser?.display_name || context.user.displayName || context.user.username;
-  const username = neynarUser?.username || context.user.username;
+  const profilePicture = neynarUser?.pfp_url || effectiveUser?.pfpUrl;
+  const displayName = neynarUser?.display_name || effectiveUser?.displayName || effectiveUser?.username;
+  const username = neynarUser?.username || effectiveUser?.username;
   const followerCount = neynarUser?.follower_count || 0;
   const followingCount = neynarUser?.following_count || 0;
-  const bio = neynarUser?.bio?.text;
+  const bio = neynarUser?.profile?.bio?.text;
 
   return (
     <main className="max-w-md mx-auto w-full px-4 py-6 pb-24 bg-black min-h-screen">
@@ -268,7 +282,7 @@ export default function ProfilePage() {
                   <span className="text-gray-500 text-sm">on leaderboard</span>
                 </div>
               )}
-              <p className="text-sm text-gray-500">FID: {context.user.fid}</p>
+              <p className="text-sm text-gray-500">FID: {effectiveUser.fid}</p>
             </div>
           </div>
 
