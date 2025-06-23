@@ -16,6 +16,10 @@ interface NeynarUser {
   follower_count: number;
   following_count: number;
   score?: number;
+  verified_addresses?: {
+    eth_addresses: string[];
+    sol_addresses: string[];
+  };
 }
 
 export function AppHeader() {
@@ -24,9 +28,12 @@ export function AppHeader() {
   const [neynarUser, setNeynarUser] = useState<NeynarUser | null>(null);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
-  // Get wallet balance
+  // Get the Farcaster user's primary ETH address for balance lookup
+  const farcasterUserAddress = neynarUser?.verified_addresses?.eth_addresses?.[0] as `0x${string}` | undefined;
+
+  // Get wallet balance for the Farcaster user's address (not the connected wallet)
   const { data: balance } = useBalance({
-    address: address,
+    address: farcasterUserAddress,
   });
 
   // Fetch Neynar user data when context is available
@@ -137,11 +144,11 @@ export function AppHeader() {
         )}
       </div>
 
-      {/* Right: Wallet balance */}
+      {/* Right: Farcaster User's Wallet balance */}
       <div className="flex items-center space-x-2 bg-gray-800/80 rounded-full px-3 py-2">
         <span className="text-lg">👛</span>
         <span className="text-white font-medium">
-          {isConnected && balance
+          {farcasterUserAddress && balance
             ? `$${formatBalance(balance.value, balance.decimals)}`
             : '$0.00'
           }
