@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import TradeModal from "./home/TradeModal";
 import { featuredTracks, type Track } from "~/lib/tracks";
@@ -58,7 +58,7 @@ const mockTracks: Track[] = [
 const genres = ["Ambient", "Lo-fi", "Synthwave", "Chillhop", "Downtempo"];
 
 function FeaturedSongs({ tracks, onTrackClick }: { tracks: Track[]; onTrackClick: (trackId: string) => void }) {
-  const { currentTrack, isPlaying, toggle } = useAudioPlayer();
+  const { toggle } = useAudioPlayer();
 
   const handleImageEnter = (track: Track) => {
     toggle(track);
@@ -93,7 +93,7 @@ function FeaturedSongs({ tracks, onTrackClick }: { tracks: Track[]; onTrackClick
               />
               {/* Play/Pause Overlay */}
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                {currentTrack && isPlaying && currentTrack.id === track.id ? (
+                {track.isPlaying ? (
                   <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <rect x="6" y="4" width="4" height="16" rx="2" fill="currentColor" />
                     <rect x="14" y="4" width="4" height="16" rx="2" fill="currentColor" />
@@ -143,12 +143,12 @@ function FeaturedSongs({ tracks, onTrackClick }: { tracks: Track[]; onTrackClick
 
 export default function MusicFeed() {
   const [selectedGenre, setSelectedGenre] = useState("Ambient");
-  const [tracks, setTracks] = useState(mockTracks);
+  const [tracks] = useState(mockTracks);
   const [expandedTrackId, setExpandedTrackId] = useState<string | null>(null);
   const [tradeModalTrack, setTradeModalTrack] = useState<Track | null>(null);
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [tradeAmount, setTradeAmount] = useState('');
-  const { currentTrack, isPlaying, toggle } = useAudioPlayer();
+  const { toggle } = useAudioPlayer();
 
   const togglePlay = (trackId: string) => {
     const track = tracks.find(t => t.id === trackId);
@@ -175,14 +175,7 @@ export default function MusicFeed() {
             Explore <span className="text-white">and<br />Trade Records</span>
           </div>
           <div className="ml-auto flex items-center gap-4">
-            <div className="hidden sm:block">
-              <Image src="/waves.gif" alt="Waves" width={64} height={40} className="object-contain" />
-            </div>
-            <div className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-              </svg>
-            </div>
+            <Image src="/waves.gif" alt="Waves" width={144} height={90} className="object-contain" unoptimized />
           </div>
         </div>
 

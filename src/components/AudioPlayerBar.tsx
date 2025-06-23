@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 export default function AudioPlayerBar() {
-  const { currentTrack, isPlaying, play, pause, toggle, seek, progress, duration } = useAudioPlayer();
+  const { currentTrack, isPlaying, toggle, seek, progress, duration } = useAudioPlayer();
 
   if (!currentTrack) return null;
 
