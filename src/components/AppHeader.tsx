@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useMiniApp } from "@neynar/react";
-import { useAccount, useBalance } from "wagmi";
+import { useBalance } from "wagmi";
 import { formatUnits } from "viem";
 import Image from "next/image";
 import Link from "next/link";
@@ -24,7 +24,6 @@ interface NeynarUser {
 
 export function AppHeader() {
   const { context } = useMiniApp();
-  const { address, isConnected } = useAccount();
   const [neynarUser, setNeynarUser] = useState<NeynarUser | null>(null);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
