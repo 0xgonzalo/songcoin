@@ -58,84 +58,81 @@ const mockTracks: Track[] = [
 const genres = ["Ambient", "Lo-fi", "Synthwave", "Chillhop", "Downtempo"];
 
 function FeaturedSongs({ tracks, onTrackClick }: { tracks: Track[]; onTrackClick: (trackId: string) => void }) {
-  const { toggle } = useAudioPlayer();
-
-  const handleImageEnter = (track: Track) => {
-    toggle(track);
-  };
-
-  const handleImageLeave = () => {
-    // No-op for leave (optional: pause if you want hover to always pause)
-  };
+  const { currentTrack, isPlaying, toggle } = useAudioPlayer();
 
   return (
     <div className="mb-6">
       <h3 className="text-lg font-semibold text-white mb-4">Featured Songs</h3>
       <div className="flex overflow-x-auto scrollbar-hide space-x-4 pb-4">
-        {tracks.map((track) => (
-          <div
-            key={track.id}
-            className="flex-shrink-0 bg-gray-900/50 rounded-xl p-4 border border-gray-800 hover:border-gray-700 transition-colors flex gap-4 cursor-pointer group"
-            style={{ minWidth: '300px' }}
-          >
-            {/* Track Image - First Column */}
+        {tracks.map((track) => {
+          const isTrackPlaying = currentTrack && currentTrack.id === track.id && isPlaying;
+          return (
             <div
-              className="w-32 h-32 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg overflow-hidden flex-shrink-0 relative"
-              onMouseEnter={() => handleImageEnter(track)}
-              onMouseLeave={handleImageLeave}
+              key={track.id}
+              className="flex-shrink-0 bg-gray-900/50 rounded-xl p-4 border border-gray-800 hover:border-gray-700 transition-colors flex gap-4 cursor-pointer group"
+              style={{ minWidth: '300px' }}
             >
-              <Image 
-                src={track.cover} 
-                alt={track.title} 
-                width={120} 
-                height={120} 
-                className="w-full h-full object-cover"
-              />
-              {/* Play/Pause Overlay */}
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                {track.isPlaying ? (
-                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <rect x="6" y="4" width="4" height="16" rx="2" fill="currentColor" />
-                    <rect x="14" y="4" width="4" height="16" rx="2" fill="currentColor" />
-                  </svg>
-                ) : (
-                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <polygon points="5,3 19,12 5,21" fill="currentColor" />
-                  </svg>
-                )}
+              {/* Track Image - First Column */}
+              <div
+                className="w-32 h-32 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg overflow-hidden flex-shrink-0 relative"
+                onClick={() => toggle(track)}
+                style={{ cursor: 'pointer' }}
+              >
+                <Image 
+                  src={track.cover} 
+                  alt={track.title} 
+                  width={120} 
+                  height={120} 
+                  className="w-full h-full object-cover"
+                />
+                {/* Play/Pause Overlay */}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  {isTrackPlaying ? (
+                    // Pause icon
+                    <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <rect x="5" y="4" width="3" height="12" rx="1" />
+                      <rect x="12" y="4" width="3" height="12" rx="1" />
+                    </svg>
+                  ) : (
+                    // Play icon
+                    <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <polygon points="6,4 16,10 6,16" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              {/* Track Info - Second Column, links to token page */}
+              <div
+                className="flex-1 space-y-2 min-w-0"
+                onClick={() => onTrackClick(track.id)}
+                role="button"
+                tabIndex={0}
+                style={{ cursor: 'pointer' }}
+              >
+                <div>
+                  <h4 className="font-medium text-white text-md truncate">{track.title}</h4>
+                  <p className="text-xs text-gray-400 truncate">{track.artist}</p>
+                </div>
+                {/* Stats */}
+                <div className="space-y-1">
+                  <div className="text-xs">
+                    <span className="text-gray-400">market cap: </span>
+                    <span className="text-green-400 font-medium">{track.mcap}</span>
+                  </div>
+                  <div className="text-xs">
+                    <span className="text-gray-400">Vol 24hs: </span>
+                    <span className="text-white font-medium">{track.vol24h}</span>
+                  </div>
+                  <div className="pt-1">
+                    <span className="bg-purple-600 text-white px-2 py-1 rounded-full text-xs">
+                      {track.genre}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-            {/* Track Info - Second Column, links to token page */}
-            <div
-              className="flex-1 space-y-2 min-w-0"
-              onClick={() => onTrackClick(track.id)}
-              role="button"
-              tabIndex={0}
-              style={{ cursor: 'pointer' }}
-            >
-              <div>
-                <h4 className="font-medium text-white text-md truncate">{track.title}</h4>
-                <p className="text-xs text-gray-400 truncate">{track.artist}</p>
-              </div>
-              {/* Stats */}
-              <div className="space-y-1">
-                <div className="text-xs">
-                  <span className="text-gray-400">market cap: </span>
-                  <span className="text-green-400 font-medium">{track.mcap}</span>
-                </div>
-                <div className="text-xs">
-                  <span className="text-gray-400">Vol 24hs: </span>
-                  <span className="text-white font-medium">{track.vol24h}</span>
-                </div>
-                <div className="pt-1">
-                  <span className="bg-purple-600 text-white px-2 py-1 rounded-full text-xs">
-                    {track.genre}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
