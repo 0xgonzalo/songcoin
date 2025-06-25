@@ -7,34 +7,42 @@ import {
   simulateBuy
 } from '@zoralabs/coins-sdk';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
-import { Address } from 'viem';
+import { Address, parseEther, formatEther } from 'viem';
 import axios from 'axios';
 
-// Function to check if metadata is accessible (simplified from cast)
+// Function to check if metadata is accessible via various gateways before creating the coin
 async function prefetchMetadata(metadataURI: string): Promise<boolean> {
+  // Extract CID from the ipfs:// URI
   const cid = metadataURI.replace('ipfs://', '');
   
+  // List of gateways to try (including the one Zora uses)
   const gateways = [
-    `https://gateway.pinata.cloud/ipfs/${cid}`,
     `https://ipfs.io/ipfs/${cid}`,
-    `https://cloudflare-ipfs.com/ipfs/${cid}`
+    `https://gateway.pinata.cloud/ipfs/${cid}`,
+    `https://cloudflare-ipfs.com/ipfs/${cid}`,
+    `https://ipfs.filebase.io/ipfs/${cid}`,
+    `https://dweb.link/ipfs/${cid}`
   ];
   
-  console.log('Checking metadata accessibility...');
+  console.log('Prefetching metadata from multiple gateways...');
   
+  // Try each gateway
   for (const gateway of gateways) {
     try {
+      console.log(`Trying gateway: ${gateway}`);
       const response = await axios.get(gateway, { timeout: 5000 });
+      
       if (response.status === 200 && response.data) {
-        console.log('Metadata accessible via:', gateway);
+        console.log('Successfully fetched metadata from gateway:', gateway);
+        console.log('Metadata:', response.data);
         return true;
       }
-    } catch {
-      console.log(`Gateway ${gateway} failed`);
+    } catch (error) {
+      console.log(`Gateway ${gateway} failed:`, error);
     }
   }
   
-  console.warn('Metadata not immediately accessible, but continuing...');
+  console.error('Failed to prefetch metadata from any gateway');
   return false;
 }
 
@@ -44,7 +52,6 @@ export interface CoinData {
   uri: string;
   payoutRecipient: Address;
   platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627";
-  initialPurchaseWei?: bigint;
   chainId?: number;
 }
 
@@ -61,7 +68,7 @@ export interface TradeParams {
 }
 
 export function useZoraCoins() {
-  const { address, isConnected, chainId } = useAccount();
+  const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   
@@ -76,11 +83,12 @@ export function useZoraCoins() {
   const [lastTxHash, setLastTxHash] = useState<`0x${string}` | null>(null);
   
   /**
-   * Create a new coin - simplified cast approach
+   * Create a new coin - exact cast repository approach
    */
   const createMusicCoin = useCallback(async (coinData: CoinData) => {
-    if (!walletClient || !publicClient || !isConnected || !address) {
-      throw new Error('Wallet not connected');
+    if (!walletClient || !publicClient || !isConnected) {
+      setCreateCoinError(new Error('Wallet not connected'));
+      return;
     }
 
     setIsCreatingCoin(true);
@@ -89,33 +97,48 @@ export function useZoraCoins() {
     setCreatedCoinAddress(null);
 
     try {
+      // Log the coinData for debugging
       console.log('Creating coin with data:', {
-        name: coinData.name,
-        symbol: coinData.symbol,
-        payoutRecipient: coinData.payoutRecipient,
+        ...coinData,
+        // Remove large URI from log
         uri: coinData.uri.substring(0, 50) + '...'
       });
       
-      // Validate URI format
+      // Verify that the URI is valid
       if (!coinData.uri.startsWith('ipfs://')) {
         throw new Error('Invalid URI format - must start with ipfs://');
       }
       
-      // Validate address format
-      if (!coinData.payoutRecipient || coinData.payoutRecipient.length !== 42 || !coinData.payoutRecipient.startsWith('0x')) {
-        throw new Error(`Invalid payout recipient address: ${coinData.payoutRecipient}`);
+      // Prefetch metadata to ensure it's accessible before creating the coin
+      const metadataAccessible = await prefetchMetadata(coinData.uri);
+      if (!metadataAccessible) {
+        console.warn('Metadata not accessible via IPFS gateways. Using fallback mechanism.');
+        
+        // Extract CID from IPFS URI
+        const cid = coinData.uri.replace('ipfs://', '');
+        
+        // Try server-side proxy
+        try {
+          const proxyResponse = await axios.get(`/api/metadata?cid=${cid}`);
+          if (proxyResponse.status === 200) {
+            console.log('Successfully fetched metadata via proxy:', proxyResponse.data);
+            // Continue with creation since our proxy will handle Zora's requests
+          } else {
+            throw new Error('Metadata is not accessible even through our proxy.');
+          }
+        } catch (proxyError) {
+          console.error('Proxy failed as well:', proxyError);
+          throw new Error('Metadata is not accessible. Please try uploading again with a different file.');
+        }
       }
       
-      // Check metadata accessibility
-      await prefetchMetadata(coinData.uri);
-      
-      // Use the provided chainId or default to Base mainnet
+      // Create the coin using the SDK - exact cast approach (no initialPurchaseWei)
+      // Ensure chainId is provided (default to Base mainnet)
       const finalCoinData = {
         ...coinData,
-        chainId: coinData.chainId || chainId || 8453
+        chainId: coinData.chainId || 8453
       };
       
-      // Create the coin using the SDK
       const result = await createCoin(finalCoinData, walletClient, publicClient);
       
       if (result.address) {
@@ -128,32 +151,33 @@ export function useZoraCoins() {
         setLastTxHash(result.hash);
       }
       
-      console.log('Coin created successfully:', result);
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error creating coin:', error);
-      
-      if (error instanceof Error) {
-        setCreateCoinError(error);
+      // Provide more detailed error information
+      if (error.message.includes('Metadata fetch failed')) {
+        console.error('Metadata validation failed. Please check the URI and metadata format.');
+        setCreateCoinError(new Error('Metadata validation failed: Please ensure your metadata follows the correct format and is accessible'));
       } else {
-        setCreateCoinError(new Error('Unknown error occurred'));
+        setCreateCoinError(error);
       }
       throw error;
     } finally {
       setIsCreatingCoin(false);
     }
-  }, [walletClient, publicClient, isConnected, address, chainId]);
+  }, [walletClient, publicClient, isConnected]);
   
   /**
    * Get create coin call params for use with wagmi hooks
    */
   const getCreateCoinCallParams = useCallback((coinData: CoinData) => {
+    // Ensure chainId is provided (default to Base mainnet)
     const finalCoinData = {
       ...coinData,
-      chainId: coinData.chainId || chainId || 8453
+      chainId: coinData.chainId || 8453
     };
     return createCoinCall(finalCoinData);
-  }, [chainId]);
+  }, []);
   
   /**
    * Trade (buy/sell) a coin
@@ -169,6 +193,7 @@ export function useZoraCoins() {
     setTradeError(null);
 
     try {
+      // Execute the trade using the SDK
       const result = await tradeCoin(tradeParams, walletClient, publicClient);
       
       setTradeSuccess(true);
@@ -178,13 +203,9 @@ export function useZoraCoins() {
       }
       
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error trading coin:', error);
-      if (error instanceof Error) {
-        setTradeError(error);
-      } else {
-        setTradeError(new Error('Unknown error occurred'));
-      }
+      setTradeError(error);
       throw error;
     } finally {
       setIsTrading(false);
@@ -192,52 +213,56 @@ export function useZoraCoins() {
   }, [walletClient, publicClient, isConnected]);
   
   /**
-   * Get trade call params for use with wagmi hooks
+   * Get trade coin call params for use with wagmi hooks
    */
-  const getTradeCoinCallParams = useCallback((tradeParams: TradeParams) => {
+  const getTradeCallParams = useCallback((tradeParams: TradeParams) => {
     return tradeCoinCall(tradeParams);
   }, []);
   
   /**
-   * Simulate a buy to get price information
+   * Simulate buying a coin to get expected output
    */
-  const simulateBuyCoin = useCallback(async (target: Address, orderSize: bigint) => {
+  const simulateBuyCoin = useCallback(async (
+    target: Address, 
+    orderSizeEth: string
+  ) => {
     if (!publicClient) {
       throw new Error('Public client not available');
     }
-
+    
     try {
       const result = await simulateBuy({
         target,
-        requestedOrderSize: orderSize,
+        requestedOrderSize: parseEther(orderSizeEth),
         publicClient,
       });
       
-      return result;
-    } catch (error: unknown) {
+      return {
+        ...result,
+        formattedAmountOut: formatEther(result.amountOut)
+      };
+    } catch (error) {
       console.error('Error simulating buy:', error);
       throw error;
     }
   }, [publicClient]);
 
   return {
-    // Coin creation
-    createMusicCoin,
-    getCreateCoinCallParams,
+    // State
     isCreatingCoin,
     createCoinSuccess,
     createCoinError,
     createdCoinAddress,
-    
-    // Trading
-    tradeMusicCoin,
-    getTradeCoinCallParams,
-    simulateBuyCoin,
     isTrading,
     tradeSuccess,
     tradeError,
-    
-    // General
     lastTxHash,
+    
+    // Functions
+    createMusicCoin,
+    getCreateCoinCallParams,
+    tradeMusicCoin,
+    getTradeCallParams,
+    simulateBuyCoin
   };
 } 
