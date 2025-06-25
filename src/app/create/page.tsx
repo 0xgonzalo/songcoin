@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useAccount } from "wagmi";
+import { useAccount, useConnect } from "wagmi";
 import { Address, parseEther } from "viem";
+import { useMiniApp } from "@neynar/react";
 import { Button } from "~/components/ui/Button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -24,9 +25,22 @@ interface CoinMetadata {
   audioFile: File | null;
 }
 
+interface NeynarUser {
+  fid: number;
+  username: string;
+  display_name: string;
+  pfp_url: string;
+  verified_addresses?: {
+    eth_addresses: string[];
+    sol_addresses: string[];
+  };
+}
+
 export default function CreatePage() {
   const router = useRouter();
   const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { context } = useMiniApp();
   const { 
     createMusicCoin
   } = useZoraCoins();
@@ -49,6 +63,36 @@ export default function CreatePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStage, setUploadStage] = useState<'idle' | 'uploading_image' | 'uploading_audio' | 'uploading_metadata' | 'creating_coin'>('idle');
+  const [neynarUser, setNeynarUser] = useState<NeynarUser | null>(null);
+
+  // Development mode: use a test FID when not in Farcaster context
+  const isDev = process.env.NODE_ENV === 'development';
+  const testFid = 3; // Dan Romero's FID for testing
+  const effectiveFid = context?.user?.fid || (isDev ? testFid : null);
+
+  // Get the effective wallet address - prefer Wagmi connected wallet, fallback to Farcaster verified address
+  const farcasterUserAddress = neynarUser?.verified_addresses?.eth_addresses?.[0] as Address | undefined;
+  const effectiveAddress = address || farcasterUserAddress;
+  const isWalletAvailable = isConnected || !!farcasterUserAddress;
+
+  // Fetch Neynar user data when context is available
+  useEffect(() => {
+    const fetchNeynarUserData = async () => {
+      if (effectiveFid) {
+        try {
+          const response = await fetch(`/api/users?fids=${effectiveFid}`);
+          const data = await response.json();
+          
+          if (data.users?.[0]) {
+            setNeynarUser(data.users[0]);
+          }
+        } catch (error) {
+          console.error('Failed to fetch Neynar user data:', error);
+        }
+      }
+    };
+    fetchNeynarUserData();
+  }, [effectiveFid]);
 
   const handleInputChange = (field: keyof CoinMetadata, value: string) => {
     setMetadata(prev => ({ ...prev, [field]: value }));
@@ -126,8 +170,12 @@ export default function CreatePage() {
       newErrors.symbol = 'Symbol must be 3-6 uppercase letters';
     }
 
-    if (!isConnected) {
-      newErrors.wallet = 'Please connect your wallet to create a coin';
+    if (!isWalletAvailable) {
+      newErrors.wallet = 'Please connect your wallet or sign in with Farcaster to create a coin';
+    }
+
+    if (!effectiveAddress) {
+      newErrors.wallet = 'No wallet address available. Please connect a wallet or ensure your Farcaster profile has a verified ETH address.';
     }
 
     setErrors(newErrors);
@@ -195,7 +243,7 @@ export default function CreatePage() {
         name: metadata.name,
         symbol: metadata.symbol,
         uri: metadataURI,
-        payoutRecipient: address as Address,
+        payoutRecipient: effectiveAddress!,
         platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627",
         initialPurchaseWei: parseEther('0.01') // Default initial purchase amount
       };
@@ -268,11 +316,53 @@ export default function CreatePage() {
         <h1 className="text-2xl font-bold text-white">Create Music Coin</h1>
       </div>
 
-      {!isConnected && (
+      {!isWalletAvailable && (
         <div className="mb-6 p-4 bg-yellow-900/50 border border-yellow-600 rounded-lg">
-          <p className="text-yellow-200 text-sm">
-            Please connect your wallet to create a music coin.
+          <p className="text-yellow-200 text-sm mb-3">
+            {context?.user ? 
+              'Please ensure your Farcaster profile has a verified ETH address, or connect a wallet to create a music coin.' :
+              'Please connect your wallet or sign in with Farcaster to create a music coin.'
+            }
           </p>
+          <div className="flex gap-2 flex-wrap">
+            {connectors.map((connector) => (
+              <Button
+                key={connector.id}
+                onClick={() => connect({ connector })}
+                className="bg-purple-600 hover:bg-purple-700 text-white text-sm px-3 py-1"
+              >
+                Connect {connector.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isWalletAvailable && effectiveAddress && (
+        <div className="mb-6 p-4 bg-green-900/50 border border-green-600 rounded-lg">
+          <p className="text-green-200 text-sm">
+            ✅ Wallet connected: {effectiveAddress.slice(0, 6)}...{effectiveAddress.slice(-4)}
+            {farcasterUserAddress && !isConnected && (
+              <span className="block text-xs text-green-300 mt-1">
+                Using Farcaster verified address
+              </span>
+            )}
+          </p>
+          {farcasterUserAddress && !isConnected && (
+            <div className="mt-2">
+              <Button
+                onClick={() => {
+                  const farcasterConnector = connectors.find(c => c.id === 'farcasterFrame');
+                  if (farcasterConnector) {
+                    connect({ connector: farcasterConnector });
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1"
+              >
+                Connect Farcaster Wallet for Signing
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
