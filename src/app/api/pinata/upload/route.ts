@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import axios, { AxiosError } from 'axios';
 
 // Use the new configuration format for Next.js App Router
-export const maxDuration = 120; // Extend the timeout to 2 minutes for large files
+export const maxDuration = 180; // Extend the timeout to 2 minutes for large files
 
 // Configure route segment for larger file uploads
 export const runtime = 'nodejs';
