@@ -62,6 +62,14 @@ export default function CreatePage() {
   const [neynarUser, setNeynarUser] = useState<NeynarUser | null>(null);
   const [autoConnectAttempted, setAutoConnectAttempted] = useState(false);
 
+  // State for immediate file uploads
+  const [imageCID, setImageCID] = useState<string | null>(null);
+  const [audioCID, setAudioCID] = useState<string | null>(null);
+  const [imageUploadProgress, setImageUploadProgress] = useState(0);
+  const [audioUploadProgress, setAudioUploadProgress] = useState(0);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
+
   // Development mode: use a test FID when not in Farcaster context
   const isDev = process.env.NODE_ENV === 'development';
   const testFid = 3; // Dan Romero's FID for testing
@@ -114,7 +122,7 @@ export default function CreatePage() {
     }
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
@@ -129,21 +137,42 @@ export default function CreatePage() {
 
       setMetadata(prev => ({ ...prev, imageFile: file }));
       
+      // Create preview
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string);
       };
       reader.readAsDataURL(file);
       
+      // Clear previous errors and CID
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors.imageFile;
         return newErrors;
       });
+      setImageCID(null);
+      setImageUploadProgress(0);
+
+      // Start immediate upload
+      setIsUploadingImage(true);
+      try {
+        console.log('Starting immediate image upload...');
+        const cid = await uploadFileToIPFS(file, (progress) => {
+          setImageUploadProgress(progress);
+        });
+        setImageCID(cid);
+        console.log('Image uploaded immediately with CID:', cid);
+      } catch (error) {
+        console.error('Immediate image upload failed:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+        setErrors(prev => ({ ...prev, imageFile: errorMessage }));
+      } finally {
+        setIsUploadingImage(false);
+      }
     }
   };
 
-  const handleAudioUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAudioUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('audio/') && !file.name.match(/\.(mp3|wav)$/i)) {
@@ -157,11 +186,32 @@ export default function CreatePage() {
       }
 
       setMetadata(prev => ({ ...prev, audioFile: file }));
+      
+      // Clear previous errors and CID
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors.audioFile;
         return newErrors;
       });
+      setAudioCID(null);
+      setAudioUploadProgress(0);
+
+      // Start immediate upload
+      setIsUploadingAudio(true);
+      try {
+        console.log('Starting immediate audio upload...');
+        const cid = await uploadFileToIPFS(file, (progress) => {
+          setAudioUploadProgress(progress);
+        });
+        setAudioCID(cid);
+        console.log('Audio uploaded immediately with CID:', cid);
+      } catch (error) {
+        console.error('Immediate audio upload failed:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+        setErrors(prev => ({ ...prev, audioFile: errorMessage }));
+      } finally {
+        setIsUploadingAudio(false);
+      }
     }
   };
 
@@ -171,8 +221,8 @@ export default function CreatePage() {
     if (!metadata.name.trim()) newErrors.name = 'Track name is required';
     if (!metadata.symbol.trim()) newErrors.symbol = 'Symbol is required';
     if (!metadata.description.trim()) newErrors.description = 'Description is required';
-    if (!metadata.imageFile) newErrors.imageFile = 'Cover image is required';
-    if (!metadata.audioFile) newErrors.audioFile = 'Audio file is required';
+    if (!imageCID) newErrors.imageFile = 'Cover image is required and must be uploaded';
+    if (!audioCID) newErrors.audioFile = 'Audio file is required and must be uploaded';
 
     if (metadata.symbol && !/^[A-Z]{3,6}$/.test(metadata.symbol)) {
       newErrors.symbol = 'Symbol must be 3-6 uppercase letters';
@@ -186,6 +236,15 @@ export default function CreatePage() {
       newErrors.wallet = 'No wallet address available. Please connect a wallet or ensure your Farcaster profile has a verified ETH address.';
     }
 
+    // Check if uploads are still in progress
+    if (isUploadingImage) {
+      newErrors.imageFile = 'Please wait for image upload to complete';
+    }
+    
+    if (isUploadingAudio) {
+      newErrors.audioFile = 'Please wait for audio upload to complete';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -197,22 +256,12 @@ export default function CreatePage() {
     setUploadProgress(0);
     
     try {
-      // Upload image to IPFS
-      setUploadStage('uploading_image');
-      const imageCID = await uploadFileToIPFS(metadata.imageFile!, (progress) => {
-        setUploadProgress(progress * 0.3); // Image upload is 30% of total progress
-      });
-      console.log('Image uploaded with CID:', imageCID);
-
-      // Upload audio to IPFS
-      setUploadStage('uploading_audio');
-      const audioCID = await uploadFileToIPFS(metadata.audioFile!, (progress) => {
-        setUploadProgress(30 + progress * 0.3); // Audio upload is another 30%
-      });
-      console.log('Audio uploaded with CID:', audioCID);
+      // Files are already uploaded, use the CIDs
+      console.log('Using pre-uploaded files - Image CID:', imageCID, 'Audio CID:', audioCID);
 
       // Create metadata object following Zora's expected format
       setUploadStage('uploading_metadata');
+      setUploadProgress(70); // Skip file upload progress since files are already uploaded
       
       // Get artist name from Farcaster profile
       const artistName = neynarUser?.display_name || context?.user?.displayName || context?.user?.username || 'Unknown Artist';
@@ -247,7 +296,7 @@ export default function CreatePage() {
       const metadataURI = await uploadJSONToIPFS(metadataObject);
       console.log('Metadata uploaded with URI:', metadataURI);
       
-      setUploadProgress(70);
+      setUploadProgress(80);
 
       // Create the coin data for Zora
       setUploadStage('creating_coin');
@@ -260,8 +309,8 @@ export default function CreatePage() {
         initialPurchaseWei: parseEther('0.01') // Default initial purchase amount
       };
 
-              // Create the coin using Zora SDK
-        const result = await createMusicCoin(coinData);
+      // Create the coin using Zora SDK
+      const result = await createMusicCoin(coinData);
       
       setUploadProgress(100);
       
@@ -392,7 +441,7 @@ export default function CreatePage() {
           </Label>
           <div
             className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-gray-500 transition-colors"
-            onClick={() => imageInputRef.current?.click()}
+            onClick={() => !isUploadingImage && imageInputRef.current?.click()}
           >
             {imagePreview ? (
               <div className="relative">
@@ -403,15 +452,33 @@ export default function CreatePage() {
                   height={200}
                   className="mx-auto rounded-lg object-cover"
                 />
-                <div className="mt-2 text-sm text-gray-400">
-                  Click to change image
+                <div className="mt-2 space-y-1">
+                  {isUploadingImage ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-blue-400">Uploading image...</p>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${imageUploadProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-400">{Math.round(imageUploadProgress)}%</p>
+                    </div>
+                  ) : imageCID ? (
+                    <div className="space-y-1">
+                      <p className="text-sm text-green-400">✅ Uploaded to IPFS</p>
+                      <p className="text-xs text-gray-400">Click to change image</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400">Click to change image</p>
+                  )}
                 </div>
               </div>
             ) : (
               <div className="space-y-2">
                 <div className="w-16 h-16 mx-auto bg-gray-700 rounded-lg flex items-center justify-center">
                   <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <p className="text-gray-400">Click to upload cover image</p>
@@ -426,6 +493,7 @@ export default function CreatePage() {
             onChange={handleImageUpload}
             className="hidden"
             id="image-upload"
+            disabled={isUploadingImage}
           />
           {errors.imageFile && (
             <p className="text-red-400 text-sm">{errors.imageFile}</p>
@@ -439,7 +507,7 @@ export default function CreatePage() {
           </Label>
           <div
             className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-gray-500 transition-colors"
-            onClick={() => audioInputRef.current?.click()}
+            onClick={() => !isUploadingAudio && audioInputRef.current?.click()}
           >
             {metadata.audioFile ? (
               <div className="space-y-2">
@@ -452,7 +520,25 @@ export default function CreatePage() {
                 <p className="text-sm text-gray-400">
                   {(metadata.audioFile.size / 1024 / 1024).toFixed(2)} MB
                 </p>
-                <p className="text-xs text-gray-500">Click to change file</p>
+                {isUploadingAudio ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-blue-400">Uploading audio...</p>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div
+                        className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${audioUploadProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-400">{Math.round(audioUploadProgress)}%</p>
+                  </div>
+                ) : audioCID ? (
+                  <div className="space-y-1">
+                    <p className="text-sm text-green-400">✅ Uploaded to IPFS</p>
+                    <p className="text-xs text-gray-500">Click to change file</p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">Click to change file</p>
+                )}
               </div>
             ) : (
               <div className="space-y-2">
@@ -473,6 +559,7 @@ export default function CreatePage() {
             onChange={handleAudioUpload}
             className="hidden"
             id="audio-upload"
+            disabled={isUploadingAudio}
           />
           {errors.audioFile && (
             <p className="text-red-400 text-sm">{errors.audioFile}</p>
