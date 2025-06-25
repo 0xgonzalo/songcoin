@@ -25,36 +25,46 @@ export async function uploadFileToIPFS(
     
     // Get the file size in MB
     const fileSizeMB = file.size / (1024 * 1024);
-    const isLargeFile = fileSizeMB > 8; // Files over 8MB use direct API
     
     // Check if we're running in development
     const isDevelopment = process.env.NODE_ENV === 'development';
     const isBrowser = typeof window !== 'undefined';
     
-    // For large files or when API keys are available, use direct API
-    if (isLargeFile || (isDevelopment && PINATA_API_KEY && PINATA_SECRET_KEY)) {
-      console.log('Using direct Pinata API');
-      return await uploadDirectToPinata(file, onProgress);
-    }
-    
-    // For smaller files in production, try API route first
+    // In production, always try API route first regardless of file size
+    // Only use direct upload if API route fails or if we're in development with keys
     if (isBrowser && !isDevelopment) {
       try {
-        console.log('Using API route for small file');
+        console.log('Using API route (production)');
         return await uploadViaAPIRoute(file, onProgress);
       } catch (proxyError) {
-        // If we get a 413 error or other server error, fall back to direct API
-        if (proxyError instanceof AxiosError && proxyError.response && 
+        console.log('API route failed, checking if direct upload is possible...');
+        
+        // Only fallback to direct API if we have the keys and it's a reasonable error
+        if (PINATA_API_KEY && PINATA_SECRET_KEY && 
+            proxyError instanceof AxiosError && proxyError.response && 
             (proxyError.response.status === 413 || proxyError.response.status >= 500)) {
-          console.log('API route failed, falling back to direct API');
+          console.log('Falling back to direct API');
           return await uploadDirectToPinata(file, onProgress);
         }
+        
+        // If no keys available or different error, rethrow the original error
         throw proxyError;
       }
     }
     
-    // Default to direct API
-    return await uploadDirectToPinata(file, onProgress);
+    // In development, use direct API if keys are available, otherwise use API route
+    if (isDevelopment) {
+      if (PINATA_API_KEY && PINATA_SECRET_KEY) {
+        console.log('Using direct Pinata API (development with keys)');
+        return await uploadDirectToPinata(file, onProgress);
+      } else {
+        console.log('Using API route (development without public keys)');
+        return await uploadViaAPIRoute(file, onProgress);
+      }
+    }
+    
+    // Default fallback
+    return await uploadViaAPIRoute(file, onProgress);
     
   } catch (error: unknown) {
     console.error('Error uploading file to IPFS:', error);
@@ -63,7 +73,7 @@ export async function uploadFileToIPFS(
 }
 
 /**
- * Upload via API route (for smaller files)
+ * Upload via API route (preferred method)
  */
 async function uploadViaAPIRoute(file: File, onProgress?: (progress: number) => void): Promise<string> {
   const formData = new FormData();
@@ -91,12 +101,12 @@ async function uploadViaAPIRoute(file: File, onProgress?: (progress: number) => 
 }
 
 /**
- * Upload directly to Pinata API (for larger files or when API keys are available)
+ * Upload directly to Pinata API (fallback method)
  */
 async function uploadDirectToPinata(file: File, onProgress?: (progress: number) => void): Promise<string> {
   // Verify API keys are available for direct upload
   if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
-    throw new Error('Pinata API keys are not configured for direct upload. Please set NEXT_PUBLIC_PINATA_API_KEY and NEXT_PUBLIC_PINATA_SECRET_KEY environment variables.');
+    throw new Error('Pinata API keys are not configured for direct upload. Please set NEXT_PUBLIC_PINATA_API_KEY and NEXT_PUBLIC_PINATA_SECRET_KEY environment variables, or use the API route method.');
   }
 
   const formData = new FormData();
