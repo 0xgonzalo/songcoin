@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 // Use the new configuration format for Next.js App Router
 export const maxDuration = 60; // Extend the timeout to 60 seconds
@@ -74,31 +74,39 @@ export async function POST(request: NextRequest) {
     console.error('Error uploading JSON to Pinata:', error);
     
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const isAxiosError = error && typeof error === 'object' && 'response' in error;
-    const status = isAxiosError && error.response && typeof error.response === 'object' && 'status' in error.response 
-      ? (error.response.status as number) 
-      : 500;
     
-    // If authentication error, provide more detailed message
-    if (status === 401) {
+    // Handle Axios errors specifically
+    if (error instanceof AxiosError) {
+      const status = error.response?.status || 500;
+      
+      // If authentication error, provide more detailed message
+      if (status === 401) {
+        return NextResponse.json(
+          { 
+            error: 'Authentication failed with Pinata. Please check your API keys in the server environment variables.',
+            details: errorMessage,
+          },
+          { status: 401 }
+        );
+      }
+      
       return NextResponse.json(
         { 
-          error: 'Authentication failed with Pinata. Please check your API keys in the server environment variables.',
+          error: 'Failed to upload metadata to IPFS',
           details: errorMessage,
+          response: error.response?.data || null
         },
-        { status: 401 }
+        { status }
       );
     }
     
+    // Handle other errors
     return NextResponse.json(
       { 
         error: 'Failed to upload metadata to IPFS',
         details: errorMessage,
-        response: isAxiosError && error.response && typeof error.response === 'object' && 'data' in error.response 
-          ? error.response.data 
-          : null
       },
-      { status }
+      { status: 500 }
     );
   }
 } 
