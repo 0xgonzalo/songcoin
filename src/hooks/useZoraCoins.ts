@@ -2,11 +2,10 @@ import { useState, useCallback } from 'react';
 import { 
   createCoin, 
   createCoinCall,
-  cleanAndValidateMetadataURI,
-  DeployCurrency
+  cleanAndValidateMetadataURI
 } from '@zoralabs/coins-sdk';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
-import { Address, parseEther } from 'viem';
+import { Address } from 'viem';
 import axios from 'axios';
 
 // Function to check if metadata is accessible via various gateways
@@ -86,7 +85,7 @@ export function useZoraCoins() {
       });
       
       // Clean and validate the metadata URI using SDK function
-      const validatedURI = cleanAndValidateMetadataURI(coinData.uri as any) as any;
+      const validatedURI = cleanAndValidateMetadataURI(coinData.uri as unknown as Parameters<typeof cleanAndValidateMetadataURI>[0]) as unknown as string;
       
       // Check metadata accessibility
       await prefetchMetadata(coinData.uri);
@@ -103,7 +102,7 @@ export function useZoraCoins() {
       };
       
       // Create the coin using SDK
-      const result = await createCoin(sdkCoinData, walletClient, publicClient);
+      const result = await createCoin(sdkCoinData as Parameters<typeof createCoin>[0], walletClient, publicClient);
       
       if (result.address) {
         setCreatedCoinAddress(result.address);
@@ -135,7 +134,7 @@ export function useZoraCoins() {
    * Get create coin call params for use with wagmi hooks
    */
   const getCreateCoinCallParams = useCallback((coinData: CoinData) => {
-    const validatedURI = cleanAndValidateMetadataURI(coinData.uri as any) as any;
+    const validatedURI = cleanAndValidateMetadataURI(coinData.uri as unknown as Parameters<typeof cleanAndValidateMetadataURI>[0]) as unknown as string;
     
     const sdkCoinData = {
       name: coinData.name,
@@ -145,7 +144,7 @@ export function useZoraCoins() {
       platformReferrer: coinData.platformReferrer || "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627" as Address,
       chainId: coinData.chainId || 8453,
       ...(coinData.initialPurchaseWei && { initialPurchaseWei: coinData.initialPurchaseWei })
-    } as any; // Cast the whole object to avoid type issues
+    } as Parameters<typeof createCoinCall>[0]; // Proper type casting
     
     return createCoinCall(sdkCoinData);
   }, []);
