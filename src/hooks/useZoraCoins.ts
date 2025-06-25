@@ -2,13 +2,11 @@ import { useState, useCallback } from 'react';
 import { 
   createCoin, 
   createCoinCall,
-  tradeCoin, 
-  tradeCoinCall,
-  simulateBuy,
+  cleanAndValidateMetadataURI,
   DeployCurrency
 } from '@zoralabs/coins-sdk';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
-import { Address, parseEther, formatEther } from 'viem';
+import { Address, parseEther } from 'viem';
 import axios from 'axios';
 
 // Function to check if metadata is accessible via various gateways
@@ -43,28 +41,15 @@ async function prefetchMetadata(metadataURI: string): Promise<boolean> {
   return false;
 }
 
-// Official Zora SDK CreateCoinArgs interface (from docs)
+// Cast repository CoinData interface (simplified for SDK 0.2.4)
 export interface CoinData {
   name: string;
   symbol: string;
   uri: string;
-  chainId?: number;
-  owners?: Address[];
   payoutRecipient: Address;
   platformReferrer?: Address;
-  currency?: DeployCurrency;
-}
-
-export interface TradeParams {
-  direction: "sell" | "buy";
-  target: Address;
-  args: {
-    recipient: Address;
-    orderSize: bigint;
-    minAmountOut?: bigint;
-    sqrtPriceLimitX96?: bigint;
-    tradeReferrer?: Address;
-  };
+  initialPurchaseWei?: bigint; // Optional, like in cast repository
+  chainId?: number; // Add for SDK compatibility
 }
 
 export function useZoraCoins() {
@@ -76,14 +61,10 @@ export function useZoraCoins() {
   const [createCoinSuccess, setCreateCoinSuccess] = useState(false);
   const [createCoinError, setCreateCoinError] = useState<Error | null>(null);
   const [createdCoinAddress, setCreatedCoinAddress] = useState<Address | null>(null);
-  
-  const [isTrading, setIsTrading] = useState(false);
-  const [tradeSuccess, setTradeSuccess] = useState(false);
-  const [tradeError, setTradeError] = useState<Error | null>(null);
   const [lastTxHash, setLastTxHash] = useState<`0x${string}` | null>(null);
   
   /**
-   * Create a new coin - official Zora SDK approach
+   * Create a new coin - SDK 0.2.4 approach
    */
   const createMusicCoin = useCallback(async (coinData: CoinData) => {
     if (!walletClient || !publicClient || !isConnected) {
@@ -104,22 +85,25 @@ export function useZoraCoins() {
         uri: coinData.uri.substring(0, 50) + '...'
       });
       
-      // Verify that the URI is valid
-      if (!coinData.uri.startsWith('ipfs://')) {
-        throw new Error('Invalid URI format - must start with ipfs://');
-      }
+      // Clean and validate the metadata URI using SDK function
+      const validatedURI = cleanAndValidateMetadataURI(coinData.uri as any) as any;
       
       // Check metadata accessibility
       await prefetchMetadata(coinData.uri);
       
-      // Prepare coin data with required defaults
-      const finalCoinData = {
-        ...coinData,
+      // Prepare coin data for SDK
+      const sdkCoinData = {
+        name: coinData.name,
+        symbol: coinData.symbol,
+        uri: validatedURI,
+        payoutRecipient: coinData.payoutRecipient,
+        platformReferrer: coinData.platformReferrer || "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627" as Address,
         chainId: coinData.chainId || 8453, // Default to Base mainnet
+        ...(coinData.initialPurchaseWei && { initialPurchaseWei: coinData.initialPurchaseWei })
       };
       
-      // Use official Zora SDK parameters exactly as documented
-      const result = await createCoin(finalCoinData, walletClient, publicClient);
+      // Create the coin using SDK
+      const result = await createCoin(sdkCoinData, walletClient, publicClient);
       
       if (result.address) {
         setCreatedCoinAddress(result.address);
@@ -151,84 +135,20 @@ export function useZoraCoins() {
    * Get create coin call params for use with wagmi hooks
    */
   const getCreateCoinCallParams = useCallback((coinData: CoinData) => {
-    // Prepare coin data with required defaults
-    const finalCoinData = {
-      ...coinData,
-      chainId: coinData.chainId || 8453, // Default to Base mainnet
-    };
-    return createCoinCall(finalCoinData);
-  }, []);
-  
-  /**
-   * Trade (buy/sell) a coin
-   */
-  const tradeMusicCoin = useCallback(async (tradeParams: TradeParams) => {
-    if (!walletClient || !publicClient || !isConnected) {
-      setTradeError(new Error('Wallet not connected'));
-      return;
-    }
-
-    setIsTrading(true);
-    setTradeSuccess(false);
-    setTradeError(null);
-
-    try {
-      const result = await tradeCoin(tradeParams, walletClient, publicClient);
-      
-      setTradeSuccess(true);
-      
-      if (result.hash) {
-        setLastTxHash(result.hash);
-      }
-      
-      return result;
-    } catch (error: unknown) {
-      console.error('Error trading coin:', error);
-      if (error instanceof Error) {
-        setTradeError(error);
-      } else {
-        setTradeError(new Error('Unknown error occurred during trading'));
-      }
-      throw error;
-    } finally {
-      setIsTrading(false);
-    }
-  }, [walletClient, publicClient, isConnected]);
-  
-  /**
-   * Get trade coin call params for use with wagmi hooks
-   */
-  const getTradeCallParams = useCallback((tradeParams: TradeParams) => {
-    return tradeCoinCall(tradeParams);
-  }, []);
-  
-  /**
-   * Simulate buying a coin to get expected output
-   */
-  const simulateBuyCoin = useCallback(async (
-    target: Address, 
-    orderSizeEth: string
-  ) => {
-    if (!publicClient) {
-      throw new Error('Public client not available');
-    }
+    const validatedURI = cleanAndValidateMetadataURI(coinData.uri as any) as any;
     
-    try {
-      const result = await simulateBuy({
-        target,
-        requestedOrderSize: parseEther(orderSizeEth),
-        publicClient,
-      });
-      
-      return {
-        ...result,
-        formattedAmountOut: formatEther(result.amountOut)
-      };
-    } catch (error) {
-      console.error('Error simulating buy:', error);
-      throw error;
-    }
-  }, [publicClient]);
+    const sdkCoinData = {
+      name: coinData.name,
+      symbol: coinData.symbol,
+      uri: validatedURI,
+      payoutRecipient: coinData.payoutRecipient,
+      platformReferrer: coinData.platformReferrer || "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627" as Address,
+      chainId: coinData.chainId || 8453,
+      ...(coinData.initialPurchaseWei && { initialPurchaseWei: coinData.initialPurchaseWei })
+    } as any; // Cast the whole object to avoid type issues
+    
+    return createCoinCall(sdkCoinData);
+  }, []);
 
   return {
     // State
@@ -236,16 +156,10 @@ export function useZoraCoins() {
     createCoinSuccess,
     createCoinError,
     createdCoinAddress,
-    isTrading,
-    tradeSuccess,
-    tradeError,
     lastTxHash,
     
     // Functions
     createMusicCoin,
-    getCreateCoinCallParams,
-    tradeMusicCoin,
-    getTradeCallParams,
-    simulateBuyCoin
+    getCreateCoinCallParams
   };
 } 

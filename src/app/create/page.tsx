@@ -11,6 +11,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { uploadFileToIPFS, uploadJSONToIPFS } from "~/lib/pinataService";
 import { useZoraCoins, CoinData } from "~/hooks/useZoraCoins";
+import { parseEther } from "viem";
 
 // Genre options matching the home page
 const genres = ["Ambient", "Lo-fi", "Synthwave", "Chillhop", "Downtempo"];
@@ -309,6 +310,7 @@ export default function CreatePage() {
         uri: metadataURI,
         payoutRecipient: effectiveAddress as Address,
         platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627" as Address,
+        initialPurchaseWei: parseEther('0.01'),
         chainId: 8453 // Base mainnet
       };
 
