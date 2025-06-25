@@ -20,7 +20,6 @@ interface CoinMetadata {
   symbol: string;
   description: string;
   genre: string;
-  artistName: string;
   imageFile: File | null;
   audioFile: File | null;
 }
@@ -51,7 +50,6 @@ export default function CreatePage() {
     symbol: "",
     description: "",
     genre: genres[0],
-    artistName: "",
     imageFile: null,
     audioFile: null,
   });
@@ -173,7 +171,6 @@ export default function CreatePage() {
     if (!metadata.name.trim()) newErrors.name = 'Track name is required';
     if (!metadata.symbol.trim()) newErrors.symbol = 'Symbol is required';
     if (!metadata.description.trim()) newErrors.description = 'Description is required';
-    if (!metadata.artistName.trim()) newErrors.artistName = 'Artist name is required';
     if (!metadata.imageFile) newErrors.imageFile = 'Cover image is required';
     if (!metadata.audioFile) newErrors.audioFile = 'Audio file is required';
 
@@ -216,6 +213,10 @@ export default function CreatePage() {
 
       // Create metadata object following Zora's expected format
       setUploadStage('uploading_metadata');
+      
+      // Get artist name from Farcaster profile
+      const artistName = neynarUser?.display_name || context?.user?.displayName || context?.user?.username || 'Unknown Artist';
+      
       const metadataObject = {
         name: metadata.name,
         description: metadata.description,
@@ -224,12 +225,12 @@ export default function CreatePage() {
         animation_url: `ipfs://${audioCID}`,
         properties: {
           genre: metadata.genre,
-          artist: metadata.artistName,
+          artist: artistName,
         },
         attributes: [
           {
             trait_type: "Artist",
-            value: metadata.artistName
+            value: artistName
           },
           {
             trait_type: "Genre", 
@@ -358,6 +359,12 @@ export default function CreatePage() {
                 Using Farcaster verified address
               </span>
             )}
+          </p>
+          <p className="text-green-200 text-sm mt-2">
+            🎵 Artist: {neynarUser?.display_name || context?.user?.displayName || context?.user?.username || 'Unknown Artist'}
+            <span className="block text-xs text-green-300 mt-1">
+              Artist name from your Farcaster profile
+            </span>
           </p>
           {farcasterUserAddress && !isConnected && (
             <div className="mt-2">
@@ -507,24 +514,6 @@ export default function CreatePage() {
           <p className="text-xs text-gray-500">3-6 uppercase letters</p>
           {errors.symbol && (
             <p className="text-red-400 text-sm">{errors.symbol}</p>
-          )}
-        </div>
-
-        {/* Artist Name */}
-        <div className="space-y-2">
-          <Label htmlFor="artist" className="text-white font-medium">
-            Artist Name *
-          </Label>
-          <Input
-            id="artist"
-            type="text"
-            placeholder="Enter artist name"
-            value={metadata.artistName}
-            onChange={(e) => handleInputChange('artistName', e.target.value)}
-            className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-purple-500"
-          />
-          {errors.artistName && (
-            <p className="text-red-400 text-sm">{errors.artistName}</p>
           )}
         </div>
 
