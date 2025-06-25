@@ -3,9 +3,13 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useAccount } from "wagmi";
+import { Address, parseEther } from "viem";
 import { Button } from "~/components/ui/Button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { uploadFileToIPFS, uploadJSONToIPFS } from "~/lib/pinataService";
+import { useZoraCoins, CoinData } from "~/hooks/useZoraCoins";
 
 // Genre options matching the home page
 const genres = ["Ambient", "Lo-fi", "Synthwave", "Chillhop", "Downtempo"];
@@ -22,6 +26,15 @@ interface CoinMetadata {
 
 export default function CreatePage() {
   const router = useRouter();
+  const { address, isConnected } = useAccount();
+  const { 
+    createMusicCoin, 
+    isCreatingCoin, 
+    createCoinSuccess, 
+    createCoinError,
+    createdCoinAddress
+  } = useZoraCoins();
+  
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   
@@ -38,6 +51,8 @@ export default function CreatePage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState<'idle' | 'uploading_image' | 'uploading_audio' | 'uploading_metadata' | 'creating_coin'>('idle');
 
   const handleInputChange = (field: keyof CoinMetadata, value: string) => {
     setMetadata(prev => ({ ...prev, [field]: value }));
@@ -115,6 +130,10 @@ export default function CreatePage() {
       newErrors.symbol = 'Symbol must be 3-6 uppercase letters';
     }
 
+    if (!isConnected) {
+      newErrors.wallet = 'Please connect your wallet to create a coin';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -123,26 +142,116 @@ export default function CreatePage() {
     if (!validateForm()) return;
 
     setIsCreating(true);
+    setUploadProgress(0);
+    
     try {
-      // TODO: Implement Zora SDK integration
-      // This would include:
-      // 1. Upload image and audio to IPFS
-      // 2. Create metadata JSON
-      // 3. Deploy coin contract using Zora SDK
-      // 4. Handle transaction confirmation
+      // Upload image to IPFS
+      setUploadStage('uploading_image');
+      const imageCID = await uploadFileToIPFS(metadata.imageFile!, (progress) => {
+        setUploadProgress(progress * 0.3); // Image upload is 30% of total progress
+      });
+      console.log('Image uploaded with CID:', imageCID);
+
+      // Upload audio to IPFS
+      setUploadStage('uploading_audio');
+      const audioCID = await uploadFileToIPFS(metadata.audioFile!, (progress) => {
+        setUploadProgress(30 + progress * 0.3); // Audio upload is another 30%
+      });
+      console.log('Audio uploaded with CID:', audioCID);
+
+      // Create metadata object following Zora's expected format
+      setUploadStage('uploading_metadata');
+      const metadataObject = {
+        name: metadata.name,
+        description: metadata.description,
+        image: `ipfs://${imageCID}`,
+        external_url: `https://songcoin.vercel.app/token/${metadata.name.replace(/\s+/g, '-').toLowerCase()}`,
+        animation_url: `ipfs://${audioCID}`,
+        properties: {
+          genre: metadata.genre,
+          artist: metadata.artistName,
+        },
+        attributes: [
+          {
+            trait_type: "Artist",
+            value: metadata.artistName
+          },
+          {
+            trait_type: "Genre", 
+            value: metadata.genre
+          },
+          {
+            trait_type: "Type",
+            value: "Music"
+          }
+        ]
+      };
+
+      // Upload metadata to IPFS
+      const metadataURI = await uploadJSONToIPFS(metadataObject);
+      console.log('Metadata uploaded with URI:', metadataURI);
       
-      console.log('Creating coin with metadata:', metadata);
+      setUploadProgress(70);
+
+      // Create the coin data for Zora
+      setUploadStage('creating_coin');
+      const coinData: CoinData = {
+        name: metadata.name,
+        symbol: metadata.symbol,
+        uri: metadataURI,
+        payoutRecipient: address as Address,
+        platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627",
+        initialPurchaseWei: parseEther('0.01') // Default initial purchase amount
+      };
+
+      // Create the coin using Zora SDK
+      const result = await createMusicCoin(coinData);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      setUploadProgress(100);
       
-      // Redirect to success page or home
-      router.push('/');
-    } catch (error) {
+      console.log('Coin created successfully:', result);
+      
+      // Redirect to success page or coin page
+      if (createdCoinAddress) {
+        router.push(`/token/${createdCoinAddress}`);
+      } else {
+        router.push('/');
+      }
+      
+    } catch (error: any) {
       console.error('Error creating coin:', error);
-      // Handle error (show toast, etc.)
+      
+      let errorMessage = 'Failed to create coin. Please try again.';
+      
+      if (error.message.includes('Authentication failed')) {
+        errorMessage = 'Pinata authentication failed. Please check your API configuration.';
+      } else if (error.message.includes('File too large')) {
+        errorMessage = 'One of your files is too large. Please use smaller files.';
+      } else if (error.message.includes('user rejected') || error.message.includes('user denied')) {
+        errorMessage = 'Transaction was cancelled.';
+      } else if (error.message.includes('Wallet not connected')) {
+        errorMessage = 'Please connect your wallet to create a coin.';
+      }
+      
+      setErrors({ general: errorMessage });
     } finally {
       setIsCreating(false);
+      setUploadStage('idle');
+    }
+  };
+
+  const getStageText = () => {
+    switch (uploadStage) {
+      case 'uploading_image':
+        return 'Uploading cover image...';
+      case 'uploading_audio':
+        return 'Uploading audio file...';
+      case 'uploading_metadata':
+        return 'Uploading metadata...';
+      case 'creating_coin':
+        return 'Creating coin on blockchain...';
+      default:
+        return 'Creating Music Coin';
     }
   };
 
@@ -160,6 +269,14 @@ export default function CreatePage() {
         </button>
         <h1 className="text-2xl font-bold text-white">Create Music Coin</h1>
       </div>
+
+      {!isConnected && (
+        <div className="mb-6 p-4 bg-yellow-900/50 border border-yellow-600 rounded-lg">
+          <p className="text-yellow-200 text-sm">
+            Please connect your wallet to create a music coin.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-6">
         {/* Cover Image Upload */}
@@ -321,10 +438,12 @@ export default function CreatePage() {
             id="genre"
             value={metadata.genre}
             onChange={(e) => handleInputChange('genre', e.target.value)}
-            className="w-full bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 focus:border-purple-500 focus:outline-none"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-md focus:border-purple-500 focus:outline-none"
           >
-            {genres.map(genre => (
-              <option key={genre} value={genre}>{genre}</option>
+            {genres.map((genre) => (
+              <option key={genre} value={genre}>
+                {genre}
+              </option>
             ))}
           </select>
         </div>
@@ -336,46 +455,54 @@ export default function CreatePage() {
           </Label>
           <textarea
             id="description"
-            placeholder="Describe your track and what makes it special..."
+            placeholder="Describe your track..."
             value={metadata.description}
             onChange={(e) => handleInputChange('description', e.target.value)}
-            rows={4}
-            className="w-full bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 focus:border-purple-500 focus:outline-none placeholder-gray-400 resize-none"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white placeholder-gray-400 rounded-md focus:border-purple-500 focus:outline-none resize-none"
+            rows={3}
           />
           {errors.description && (
             <p className="text-red-400 text-sm">{errors.description}</p>
           )}
         </div>
 
+        {/* Progress Bar */}
+        {isCreating && (
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm text-gray-400">
+              <span>{getStageText()}</span>
+              <span>{Math.round(uploadProgress)}%</span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Error Display */}
+        {errors.general && (
+          <div className="p-4 bg-red-900/50 border border-red-600 rounded-lg">
+            <p className="text-red-200 text-sm">{errors.general}</p>
+          </div>
+        )}
+
+        {errors.wallet && (
+          <div className="p-4 bg-yellow-900/50 border border-yellow-600 rounded-lg">
+            <p className="text-yellow-200 text-sm">{errors.wallet}</p>
+          </div>
+        )}
+
         {/* Create Button */}
         <Button
           onClick={handleCreateCoin}
-          disabled={isCreating}
-          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isCreating || !isConnected}
+          className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white font-medium py-3 rounded-lg transition-colors"
         >
-          {isCreating ? (
-            <div className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Creating Coin...
-            </div>
-          ) : (
-            'Create Music Coin'
-          )}
+          {isCreating ? getStageText() : 'Create Music Coin'}
         </Button>
-
-        {/* Info Section */}
-        <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
-          <h3 className="text-white font-medium">What happens next?</h3>
-          <ul className="text-sm text-gray-400 space-y-1">
-            <li>• Your files will be uploaded to IPFS</li>
-            <li>• A smart contract will be deployed for your coin</li>
-            <li>• Your music coin will be available for trading</li>
-            <li>• You&apos;ll earn from every transaction</li>
-          </ul>
-        </div>
       </div>
     </main>
   );
