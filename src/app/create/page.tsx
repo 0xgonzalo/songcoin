@@ -303,28 +303,12 @@ export default function CreatePage() {
       // Create the coin data for Zora
       setUploadStage('creating_coin');
       
-      // Debug logging
-      console.log('Creating coin with:', {
-        name: metadata.name,
-        symbol: metadata.symbol,
-        uri: metadataURI,
-        payoutRecipient: effectiveAddress,
-        effectiveAddressType: typeof effectiveAddress,
-        effectiveAddressLength: effectiveAddress?.length
-      });
-      
-      // Validate effectiveAddress
-      if (!effectiveAddress || effectiveAddress === '0x' || effectiveAddress.length !== 42) {
-        throw new Error(`Invalid payout recipient address: ${effectiveAddress}`);
-      }
-      
       const coinData: CoinData = {
         name: metadata.name,
         symbol: metadata.symbol,
         uri: metadataURI,
         payoutRecipient: effectiveAddress as Address,
-        platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627",
-        initialPurchaseWei: parseEther('0.01') // Default initial purchase amount
+        platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627"
       };
 
       // Create the coin using Zora SDK
