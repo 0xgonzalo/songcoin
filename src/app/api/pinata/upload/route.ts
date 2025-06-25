@@ -65,26 +65,32 @@ export async function POST(request: NextRequest) {
       IpfsHash: response.data.IpfsHash
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error uploading to Pinata:', error);
     
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const isAxiosError = error && typeof error === 'object' && 'response' in error;
+    const status = isAxiosError && error.response && typeof error.response === 'object' && 'status' in error.response 
+      ? (error.response.status as number) 
+      : 500;
+    
     // Determine if this is a size limitation error
-    if (error.response?.status === 413) {
+    if (status === 413) {
       return NextResponse.json(
         { 
           error: 'File too large for upload. Please use a smaller file (recommended: under 10MB).',
-          details: error.message,
+          details: errorMessage,
         },
         { status: 413 }
       );
     }
     
     // If authentication error, provide more detailed message
-    if (error.response?.status === 401) {
+    if (status === 401) {
       return NextResponse.json(
         { 
           error: 'Authentication failed with Pinata. Please check your API keys in the server environment variables.',
-          details: error.message,
+          details: errorMessage,
         },
         { status: 401 }
       );
@@ -93,10 +99,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Failed to upload to IPFS',
-        details: error.message,
-        response: error.response?.data
+        details: errorMessage,
+        response: isAxiosError && error.response && typeof error.response === 'object' && 'data' in error.response 
+          ? error.response.data 
+          : null
       },
-      { status: error.response?.status || 500 }
+      { status }
     );
   }
 } 

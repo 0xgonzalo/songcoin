@@ -7,7 +7,7 @@ import {
   simulateBuy
 } from '@zoralabs/coins-sdk';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
-import { parseEther, formatEther, Address } from 'viem';
+import { Address } from 'viem';
 import axios from 'axios';
 
 // Function to check if metadata is accessible via various gateways before creating the coin
@@ -54,6 +54,7 @@ export interface CoinData {
   payoutRecipient: Address;
   platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627";
   initialPurchaseWei?: bigint;
+  chainId?: number;
 }
 
 export interface TradeParams {
@@ -69,7 +70,7 @@ export interface TradeParams {
 }
 
 export function useZoraCoins() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   
@@ -98,26 +99,32 @@ export function useZoraCoins() {
     setCreatedCoinAddress(null);
 
     try {
+      // Add chainId to coinData if not provided
+      const coinDataWithChain = {
+        ...coinData,
+        chainId: coinData.chainId || chainId || 8453 // Default to Base mainnet
+      };
+
       // Log the coinData for debugging
       console.log('Creating coin with data:', {
-        ...coinData,
+        ...coinDataWithChain,
         // Remove large URI from log
-        uri: coinData.uri.substring(0, 50) + '...'
+        uri: coinDataWithChain.uri.substring(0, 50) + '...'
       });
       
       // Verify that the URI is valid
-      if (!coinData.uri.startsWith('ipfs://')) {
+      if (!coinDataWithChain.uri.startsWith('ipfs://')) {
         throw new Error('Invalid URI format - must start with ipfs://');
       }
       
       // Prefetch metadata to ensure it's accessible before creating the coin
-      const metadataAccessible = await prefetchMetadata(coinData.uri);
+      const metadataAccessible = await prefetchMetadata(coinDataWithChain.uri);
       if (!metadataAccessible) {
         console.warn('Metadata not accessible via IPFS gateways. Continuing with creation...');
       }
       
       // Create the coin using the SDK
-      const result = await createCoin(coinData, walletClient, publicClient);
+      const result = await createCoin(coinDataWithChain, walletClient, publicClient);
       
       if (result.address) {
         setCreatedCoinAddress(result.address);
@@ -130,14 +137,16 @@ export function useZoraCoins() {
       }
       
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating coin:', error);
       // Provide more detailed error information
-      if (error.message.includes('Metadata fetch failed')) {
+      if (error instanceof Error && error.message.includes('Metadata fetch failed')) {
         console.error('Metadata validation failed. Please check the URI and metadata format.');
         setCreateCoinError(new Error('Metadata validation failed: Please ensure your metadata follows the correct format and is accessible'));
-      } else {
+      } else if (error instanceof Error) {
         setCreateCoinError(error);
+      } else {
+        setCreateCoinError(new Error('Unknown error occurred'));
       }
       throw error;
     } finally {
@@ -149,8 +158,12 @@ export function useZoraCoins() {
    * Get create coin call params for use with wagmi hooks
    */
   const getCreateCoinCallParams = useCallback((coinData: CoinData) => {
-    return createCoinCall(coinData);
-  }, []);
+    const coinDataWithChain = {
+      ...coinData,
+      chainId: coinData.chainId || chainId || 8453 // Default to Base mainnet
+    };
+    return createCoinCall(coinDataWithChain);
+  }, [chainId]);
   
   /**
    * Trade (buy/sell) a coin
@@ -176,9 +189,13 @@ export function useZoraCoins() {
       }
       
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error trading coin:', error);
-      setTradeError(error);
+      if (error instanceof Error) {
+        setTradeError(error);
+      } else {
+        setTradeError(new Error('Unknown error occurred'));
+      }
       throw error;
     } finally {
       setIsTrading(false);
@@ -203,12 +220,12 @@ export function useZoraCoins() {
     try {
       const result = await simulateBuy({
         target,
-        orderSize,
-        recipient: address || '0x0000000000000000000000000000000000000000',
-      }, publicClient);
+        requestedOrderSize: orderSize,
+        publicClient,
+      });
       
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error simulating buy:', error);
       throw error;
     }

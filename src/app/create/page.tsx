@@ -28,11 +28,7 @@ export default function CreatePage() {
   const router = useRouter();
   const { address, isConnected } = useAccount();
   const { 
-    createMusicCoin, 
-    isCreatingCoin, 
-    createCoinSuccess, 
-    createCoinError,
-    createdCoinAddress
+    createMusicCoin
   } = useZoraCoins();
   
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -212,25 +208,27 @@ export default function CreatePage() {
       console.log('Coin created successfully:', result);
       
       // Redirect to success page or coin page
-      if (createdCoinAddress) {
-        router.push(`/token/${createdCoinAddress}`);
+      if (result?.address) {
+        router.push(`/token/${result.address}`);
       } else {
         router.push('/');
       }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating coin:', error);
       
       let errorMessage = 'Failed to create coin. Please try again.';
       
-      if (error.message.includes('Authentication failed')) {
-        errorMessage = 'Pinata authentication failed. Please check your API configuration.';
-      } else if (error.message.includes('File too large')) {
-        errorMessage = 'One of your files is too large. Please use smaller files.';
-      } else if (error.message.includes('user rejected') || error.message.includes('user denied')) {
-        errorMessage = 'Transaction was cancelled.';
-      } else if (error.message.includes('Wallet not connected')) {
-        errorMessage = 'Please connect your wallet to create a coin.';
+      if (error instanceof Error) {
+        if (error.message.includes('Authentication failed')) {
+          errorMessage = 'Pinata authentication failed. Please check your API configuration.';
+        } else if (error.message.includes('File too large')) {
+          errorMessage = 'One of your files is too large. Please use smaller files.';
+        } else if (error.message.includes('user rejected') || error.message.includes('user denied')) {
+          errorMessage = 'Transaction was cancelled.';
+        } else if (error.message.includes('Wallet not connected')) {
+          errorMessage = 'Please connect your wallet to create a coin.';
+        }
       }
       
       setErrors({ general: errorMessage });
