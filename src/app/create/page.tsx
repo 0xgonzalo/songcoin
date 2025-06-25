@@ -38,12 +38,10 @@ interface NeynarUser {
 
 export default function CreatePage() {
   const router = useRouter();
+  const { context } = useMiniApp();
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
-  const { context } = useMiniApp();
-  const { 
-    createMusicCoin
-  } = useZoraCoins();
+  const { createMusicCoin } = useZoraCoins();
   
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -64,6 +62,7 @@ export default function CreatePage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStage, setUploadStage] = useState<'idle' | 'uploading_image' | 'uploading_audio' | 'uploading_metadata' | 'creating_coin'>('idle');
   const [neynarUser, setNeynarUser] = useState<NeynarUser | null>(null);
+  const [autoConnectAttempted, setAutoConnectAttempted] = useState(false);
 
   // Development mode: use a test FID when not in Farcaster context
   const isDev = process.env.NODE_ENV === 'development';
@@ -74,6 +73,18 @@ export default function CreatePage() {
   const farcasterUserAddress = neynarUser?.verified_addresses?.eth_addresses?.[0] as Address | undefined;
   const effectiveAddress = address || farcasterUserAddress;
   const isWalletAvailable = isConnected || !!farcasterUserAddress;
+
+  // Auto-connect Farcaster wallet when available
+  useEffect(() => {
+    if (!autoConnectAttempted && !isConnected && context?.user?.fid && farcasterUserAddress) {
+      const farcasterConnector = connectors.find(c => c.id === 'farcasterFrame');
+      if (farcasterConnector) {
+        console.log('Auto-connecting Farcaster wallet for create page...');
+        connect({ connector: farcasterConnector });
+        setAutoConnectAttempted(true);
+      }
+    }
+  }, [context?.user?.fid, farcasterUserAddress, isConnected, connectors, connect, autoConnectAttempted]);
 
   // Fetch Neynar user data when context is available
   useEffect(() => {
@@ -248,8 +259,8 @@ export default function CreatePage() {
         initialPurchaseWei: parseEther('0.01') // Default initial purchase amount
       };
 
-      // Create the coin using Zora SDK
-      const result = await createMusicCoin(coinData);
+              // Create the coin using Zora SDK
+        const result = await createMusicCoin(coinData);
       
       setUploadProgress(100);
       

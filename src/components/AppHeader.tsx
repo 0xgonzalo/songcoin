@@ -26,6 +26,8 @@ export function AppHeader() {
   const { context } = useMiniApp();
   const [neynarUser, setNeynarUser] = useState<NeynarUser | null>(null);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
   
   // Development mode: use a test FID when not in Farcaster context
   const isDev = process.env.NODE_ENV === 'development';
@@ -56,6 +58,8 @@ export function AppHeader() {
           
           if (data.users?.[0]) {
             setNeynarUser(data.users[0]);
+            // Reset avatar error state when new user data is loaded
+            setAvatarError(false);
           }
         } catch (error) {
           console.error('Failed to fetch Neynar user data:', error);
@@ -85,6 +89,23 @@ export function AppHeader() {
   const fid = neynarUser?.fid || effectiveUser?.fid;
   const score = neynarUser?.score;
 
+  // Handle avatar loading
+  const handleAvatarLoad = () => {
+    setAvatarLoading(false);
+    setAvatarError(false);
+  };
+
+  const handleAvatarError = () => {
+    console.warn('Avatar failed to load:', profilePicture);
+    setAvatarLoading(false);
+    setAvatarError(true);
+  };
+
+  const handleAvatarLoadStart = () => {
+    setAvatarLoading(true);
+    setAvatarError(false);
+  };
+
   return (
     <div className="flex items-center justify-between p-4 bg-gray-900/90 backdrop-blur-sm relative">
       {/* Development Mode Indicator */}
@@ -108,20 +129,30 @@ export function AppHeader() {
 
       {/* Middle: Farcaster Avatar (clickable) */}
       <div className="flex-shrink-0 relative">
-        {profilePicture ? (
+        {profilePicture && !avatarError ? (
           <div
             className="relative cursor-pointer"
             onClick={() => {
               setIsUserDropdownOpen(!isUserDropdownOpen);
             }}
           >
-            <Image
-              src={profilePicture}
-              alt="Profile"
-              width={48}
-              height={48}
-              className="w-12 h-12 rounded-full border-2 border-white/20 object-cover"
-            />
+            <div className="relative">
+              {avatarLoading && (
+                <div className="absolute inset-0 w-12 h-12 rounded-full bg-gray-700 animate-pulse border-2 border-white/20"></div>
+              )}
+              <Image
+                src={profilePicture}
+                alt="Profile"
+                width={48}
+                height={48}
+                className="w-12 h-12 rounded-full border-2 border-white/20 object-cover"
+                onLoad={handleAvatarLoad}
+                onError={handleAvatarError}
+                onLoadStart={handleAvatarLoadStart}
+                priority
+                unoptimized // This helps with external URLs
+              />
+            </div>
             {/* Online indicator */}
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-900"></div>
           </div>
