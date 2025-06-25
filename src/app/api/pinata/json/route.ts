@@ -39,17 +39,6 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Set pinning options
-    const pinataOptions = {
-      pinataMetadata: {
-        name: jsonData.name ? `SongCoin - ${jsonData.name} Metadata` : 'SongCoin Metadata',
-      },
-      pinataOptions: {
-        cidVersion: 0,
-        wrapWithDirectory: false
-      }
-    };
-    
     // Send the request to Pinata
     const response = await axios.post(
       'https://api.pinata.cloud/pinning/pinJSONToIPFS',

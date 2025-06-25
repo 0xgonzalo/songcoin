@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 export function getIpfsUrl(ipfsUrl: string): string {
   if (!ipfsUrl.startsWith('ipfs://')) {
@@ -37,15 +37,21 @@ export async function uploadFileToIPFS(
     } else {
       throw new Error('No IPFS hash returned from upload');
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error uploading file to IPFS:', error);
     
-    if (error.response?.status === 413) {
-      throw new Error('File too large for upload. Please use a smaller file.');
-    } else if (error.response?.status === 401) {
-      throw new Error('Authentication failed. Please check your Pinata API configuration.');
-    } else {
+    if (error instanceof AxiosError) {
+      if (error.response?.status === 413) {
+        throw new Error('File too large for upload. Please use a smaller file.');
+      } else if (error.response?.status === 401) {
+        throw new Error('Authentication failed. Please check your Pinata API configuration.');
+      } else {
+        throw new Error(`Upload failed: ${error.message}`);
+      }
+    } else if (error instanceof Error) {
       throw new Error(`Upload failed: ${error.message}`);
+    } else {
+      throw new Error('Upload failed: Unknown error');
     }
   }
 }
@@ -53,7 +59,7 @@ export async function uploadFileToIPFS(
 /**
  * Upload JSON metadata to IPFS via Pinata
  */
-export async function uploadJSONToIPFS(jsonData: any): Promise<string> {
+export async function uploadJSONToIPFS(jsonData: Record<string, unknown>): Promise<string> {
   try {
     const response = await axios.post('/api/pinata/json', jsonData, {
       headers: {
@@ -68,13 +74,19 @@ export async function uploadJSONToIPFS(jsonData: any): Promise<string> {
     } else {
       throw new Error('No IPFS hash returned from JSON upload');
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error uploading JSON to IPFS:', error);
     
-    if (error.response?.status === 401) {
-      throw new Error('Authentication failed. Please check your Pinata API configuration.');
-    } else {
+    if (error instanceof AxiosError) {
+      if (error.response?.status === 401) {
+        throw new Error('Authentication failed. Please check your Pinata API configuration.');
+      } else {
+        throw new Error(`JSON upload failed: ${error.message}`);
+      }
+    } else if (error instanceof Error) {
       throw new Error(`JSON upload failed: ${error.message}`);
+    } else {
+      throw new Error('JSON upload failed: Unknown error');
     }
   }
 } 

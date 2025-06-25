@@ -70,7 +70,7 @@ export interface TradeParams {
 }
 
 export function useZoraCoins() {
-  const { address, isConnected, chainId } = useAccount();
+  const { isConnected, chainId } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   
@@ -152,7 +152,7 @@ export function useZoraCoins() {
     } finally {
       setIsCreatingCoin(false);
     }
-  }, [walletClient, publicClient, isConnected]);
+  }, [walletClient, publicClient, isConnected, chainId]);
   
   /**
    * Get create coin call params for use with wagmi hooks
@@ -229,7 +229,7 @@ export function useZoraCoins() {
       console.error('Error simulating buy:', error);
       throw error;
     }
-  }, [publicClient, address]);
+  }, [publicClient]);
 
   return {
     // Coin creation
