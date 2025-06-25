@@ -162,6 +162,7 @@ export default function CreatePage() {
         });
         setImageCID(cid);
         console.log('Image uploaded immediately with CID:', cid);
+        console.log('Image file accessible at:', `https://gateway.pinata.cloud/ipfs/${cid}`);
       } catch (error) {
         console.error('Immediate image upload failed:', error);
         const errorMessage = error instanceof Error ? error.message : 'Upload failed';
@@ -205,6 +206,7 @@ export default function CreatePage() {
         });
         setAudioCID(cid);
         console.log('Audio uploaded immediately with CID:', cid);
+        console.log('Audio file accessible at:', `https://gateway.pinata.cloud/ipfs/${cid}`);
       } catch (error) {
         console.error('Immediate audio upload failed:', error);
         const errorMessage = error instanceof Error ? error.message : 'Upload failed';
@@ -300,11 +302,27 @@ export default function CreatePage() {
 
       // Create the coin data for Zora
       setUploadStage('creating_coin');
+      
+      // Debug logging
+      console.log('Creating coin with:', {
+        name: metadata.name,
+        symbol: metadata.symbol,
+        uri: metadataURI,
+        payoutRecipient: effectiveAddress,
+        effectiveAddressType: typeof effectiveAddress,
+        effectiveAddressLength: effectiveAddress?.length
+      });
+      
+      // Validate effectiveAddress
+      if (!effectiveAddress || effectiveAddress === '0x' || effectiveAddress.length !== 42) {
+        throw new Error(`Invalid payout recipient address: ${effectiveAddress}`);
+      }
+      
       const coinData: CoinData = {
         name: metadata.name,
         symbol: metadata.symbol,
         uri: metadataURI,
-        payoutRecipient: effectiveAddress!,
+        payoutRecipient: effectiveAddress as Address,
         platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627",
         initialPurchaseWei: parseEther('0.01') // Default initial purchase amount
       };
@@ -337,6 +355,13 @@ export default function CreatePage() {
           errorMessage = 'Transaction was cancelled.';
         } else if (error.message.includes('Wallet not connected')) {
           errorMessage = 'Please connect your wallet to create a coin.';
+        } else if (error.message.includes('Cannot convert 0x to a BigInt')) {
+          errorMessage = 'Wallet address validation failed. Please try reconnecting your wallet.';
+        } else if (error.message.includes('Invalid payout recipient address')) {
+          errorMessage = 'Invalid wallet address. Please reconnect your wallet and try again.';
+        } else {
+          // Include the actual error message for debugging
+          errorMessage = `Failed to create coin: ${error.message}`;
         }
       }
       
@@ -467,6 +492,14 @@ export default function CreatePage() {
                   ) : imageCID ? (
                     <div className="space-y-1">
                       <p className="text-sm text-green-400">✅ Uploaded to IPFS</p>
+                      <a 
+                        href={`https://gateway.pinata.cloud/ipfs/${imageCID}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-400 hover:text-blue-300 underline"
+                      >
+                        View on IPFS
+                      </a>
                       <p className="text-xs text-gray-400">Click to change image</p>
                     </div>
                   ) : (
@@ -534,6 +567,14 @@ export default function CreatePage() {
                 ) : audioCID ? (
                   <div className="space-y-1">
                     <p className="text-sm text-green-400">✅ Uploaded to IPFS</p>
+                    <a 
+                      href={`https://gateway.pinata.cloud/ipfs/${audioCID}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-400 hover:text-blue-300 underline"
+                    >
+                      View on IPFS
+                    </a>
                     <p className="text-xs text-gray-500">Click to change file</p>
                   </div>
                 ) : (
