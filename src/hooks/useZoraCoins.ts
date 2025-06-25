@@ -68,7 +68,7 @@ export interface TradeParams {
 }
 
 export function useZoraCoins() {
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   
@@ -152,14 +152,16 @@ export function useZoraCoins() {
       }
       
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating coin:', error);
       // Provide more detailed error information
-      if (error.message.includes('Metadata fetch failed')) {
+      if (error instanceof Error && error.message.includes('Metadata fetch failed')) {
         console.error('Metadata validation failed. Please check the URI and metadata format.');
         setCreateCoinError(new Error('Metadata validation failed: Please ensure your metadata follows the correct format and is accessible'));
-      } else {
+      } else if (error instanceof Error) {
         setCreateCoinError(error);
+      } else {
+        setCreateCoinError(new Error('Unknown error occurred during coin creation'));
       }
       throw error;
     } finally {
@@ -203,9 +205,13 @@ export function useZoraCoins() {
       }
       
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error trading coin:', error);
-      setTradeError(error);
+      if (error instanceof Error) {
+        setTradeError(error);
+      } else {
+        setTradeError(new Error('Unknown error occurred during trading'));
+      }
       throw error;
     } finally {
       setIsTrading(false);
