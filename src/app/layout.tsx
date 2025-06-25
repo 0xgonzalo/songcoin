@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   description: APP_DESCRIPTION,
 };
 
+// Force dynamic rendering since we use getSession which requires headers
+export const dynamic = 'force-dynamic';
+
 export default async function RootLayout({
   children,
 }: Readonly<{

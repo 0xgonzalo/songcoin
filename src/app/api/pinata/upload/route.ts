@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import axios, { AxiosError } from 'axios';
 
 // Use the new configuration format for Next.js App Router
-export const maxDuration = 180; // Extend the timeout to 2 minutes for large files
+export const maxDuration = 60; // Maximum allowed for Vercel hobby plan
 
 // Configure route segment for larger file uploads
 export const runtime = 'nodejs';
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         },
         maxBodyLength: Infinity, // Allow unlimited body size
         maxContentLength: Infinity, // Allow unlimited content length
-        timeout: 120000, // 2 minute timeout for large files
+        timeout: 50000, // 50 second timeout to stay within Vercel limits
       }
     );
     
