@@ -4,18 +4,17 @@ import {
   createCoinCall,
   tradeCoin, 
   tradeCoinCall,
-  simulateBuy
+  simulateBuy,
+  DeployCurrency
 } from '@zoralabs/coins-sdk';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
 import { Address, parseEther, formatEther } from 'viem';
 import axios from 'axios';
 
-// Function to check if metadata is accessible via various gateways before creating the coin
+// Function to check if metadata is accessible via various gateways
 async function prefetchMetadata(metadataURI: string): Promise<boolean> {
-  // Extract CID from the ipfs:// URI
   const cid = metadataURI.replace('ipfs://', '');
   
-  // List of gateways to try (including the one Zora uses)
   const gateways = [
     `https://ipfs.io/ipfs/${cid}`,
     `https://gateway.pinata.cloud/ipfs/${cid}`,
@@ -26,7 +25,6 @@ async function prefetchMetadata(metadataURI: string): Promise<boolean> {
   
   console.log('Prefetching metadata from multiple gateways...');
   
-  // Try each gateway
   for (const gateway of gateways) {
     try {
       console.log(`Trying gateway: ${gateway}`);
@@ -34,7 +32,6 @@ async function prefetchMetadata(metadataURI: string): Promise<boolean> {
       
       if (response.status === 200 && response.data) {
         console.log('Successfully fetched metadata from gateway:', gateway);
-        console.log('Metadata:', response.data);
         return true;
       }
     } catch (error) {
@@ -42,17 +39,20 @@ async function prefetchMetadata(metadataURI: string): Promise<boolean> {
     }
   }
   
-  console.error('Failed to prefetch metadata from any gateway');
+  console.warn('Metadata not accessible via IPFS gateways, but continuing...');
   return false;
 }
 
+// Official Zora SDK CreateCoinArgs interface (from docs)
 export interface CoinData {
   name: string;
   symbol: string;
   uri: string;
-  payoutRecipient: Address;
-  platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627";
   chainId?: number;
+  owners?: Address[];
+  payoutRecipient: Address;
+  platformReferrer?: Address;
+  currency?: DeployCurrency;
 }
 
 export interface TradeParams {
@@ -83,7 +83,7 @@ export function useZoraCoins() {
   const [lastTxHash, setLastTxHash] = useState<`0x${string}` | null>(null);
   
   /**
-   * Create a new coin - exact cast repository approach
+   * Create a new coin - official Zora SDK approach
    */
   const createMusicCoin = useCallback(async (coinData: CoinData) => {
     if (!walletClient || !publicClient || !isConnected) {
@@ -97,10 +97,10 @@ export function useZoraCoins() {
     setCreatedCoinAddress(null);
 
     try {
-      // Log the coinData for debugging
       console.log('Creating coin with data:', {
-        ...coinData,
-        // Remove large URI from log
+        name: coinData.name,
+        symbol: coinData.symbol,
+        payoutRecipient: coinData.payoutRecipient,
         uri: coinData.uri.substring(0, 50) + '...'
       });
       
@@ -109,36 +109,16 @@ export function useZoraCoins() {
         throw new Error('Invalid URI format - must start with ipfs://');
       }
       
-      // Prefetch metadata to ensure it's accessible before creating the coin
-      const metadataAccessible = await prefetchMetadata(coinData.uri);
-      if (!metadataAccessible) {
-        console.warn('Metadata not accessible via IPFS gateways. Using fallback mechanism.');
-        
-        // Extract CID from IPFS URI
-        const cid = coinData.uri.replace('ipfs://', '');
-        
-        // Try server-side proxy
-        try {
-          const proxyResponse = await axios.get(`/api/metadata?cid=${cid}`);
-          if (proxyResponse.status === 200) {
-            console.log('Successfully fetched metadata via proxy:', proxyResponse.data);
-            // Continue with creation since our proxy will handle Zora's requests
-          } else {
-            throw new Error('Metadata is not accessible even through our proxy.');
-          }
-        } catch (proxyError) {
-          console.error('Proxy failed as well:', proxyError);
-          throw new Error('Metadata is not accessible. Please try uploading again with a different file.');
-        }
-      }
+      // Check metadata accessibility
+      await prefetchMetadata(coinData.uri);
       
-      // Create the coin using the SDK - exact cast approach (no initialPurchaseWei)
-      // Ensure chainId is provided (default to Base mainnet)
+      // Prepare coin data with required defaults
       const finalCoinData = {
         ...coinData,
-        chainId: coinData.chainId || 8453
+        chainId: coinData.chainId || 8453, // Default to Base mainnet
       };
       
+      // Use official Zora SDK parameters exactly as documented
       const result = await createCoin(finalCoinData, walletClient, publicClient);
       
       if (result.address) {
@@ -151,14 +131,12 @@ export function useZoraCoins() {
         setLastTxHash(result.hash);
       }
       
+      console.log('Coin created successfully:', result);
       return result;
     } catch (error: unknown) {
       console.error('Error creating coin:', error);
-      // Provide more detailed error information
-      if (error instanceof Error && error.message.includes('Metadata fetch failed')) {
-        console.error('Metadata validation failed. Please check the URI and metadata format.');
-        setCreateCoinError(new Error('Metadata validation failed: Please ensure your metadata follows the correct format and is accessible'));
-      } else if (error instanceof Error) {
+      
+      if (error instanceof Error) {
         setCreateCoinError(error);
       } else {
         setCreateCoinError(new Error('Unknown error occurred during coin creation'));
@@ -173,10 +151,10 @@ export function useZoraCoins() {
    * Get create coin call params for use with wagmi hooks
    */
   const getCreateCoinCallParams = useCallback((coinData: CoinData) => {
-    // Ensure chainId is provided (default to Base mainnet)
+    // Prepare coin data with required defaults
     const finalCoinData = {
       ...coinData,
-      chainId: coinData.chainId || 8453
+      chainId: coinData.chainId || 8453, // Default to Base mainnet
     };
     return createCoinCall(finalCoinData);
   }, []);
@@ -195,7 +173,6 @@ export function useZoraCoins() {
     setTradeError(null);
 
     try {
-      // Execute the trade using the SDK
       const result = await tradeCoin(tradeParams, walletClient, publicClient);
       
       setTradeSuccess(true);

@@ -308,7 +308,7 @@ export default function CreatePage() {
         symbol: metadata.symbol,
         uri: metadataURI,
         payoutRecipient: effectiveAddress as Address,
-        platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627",
+        platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627" as Address,
         chainId: 8453 // Base mainnet
       };
 
