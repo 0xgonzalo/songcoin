@@ -1,4 +1,12 @@
 {
   "buildCommand": "next build",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "functions": {
+    "src/app/api/pinata/upload/route.ts": {
+      "maxDuration": 120
+    },
+    "src/app/api/pinata/json/route.ts": {
+      "maxDuration": 60
+    }
+  }
 } 

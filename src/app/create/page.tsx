@@ -153,8 +153,8 @@ export default function CreatePage() {
         return;
       }
       
-      if (file.size > 50 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, audioFile: 'Audio file size must be less than 50MB' }));
+      if (file.size > 100 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, audioFile: 'Audio file size must be less than 100MB' }));
         return;
       }
 
@@ -455,7 +455,7 @@ export default function CreatePage() {
                   </svg>
                 </div>
                 <p className="text-gray-400">Click to upload audio file</p>
-                <p className="text-xs text-gray-500">MP3, WAV up to 50MB</p>
+                <p className="text-xs text-gray-500">MP3, WAV up to 100MB</p>
               </div>
             )}
           </div>

@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import axios, { AxiosError } from 'axios';
 
 // Use the new configuration format for Next.js App Router
-export const maxDuration = 60; // Extend the timeout to 60 seconds
+export const maxDuration = 120; // Extend the timeout to 2 minutes for large files
+
+// Configure route segment for larger file uploads
+export const runtime = 'nodejs';
+export const preferredRegion = 'auto';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +18,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'No file provided' },
         { status: 400 }
+      );
+    }
+
+    // Check file size on the server side (100MB limit)
+    const maxFileSize = 100 * 1024 * 1024; // 100MB in bytes
+    if (file.size > maxFileSize) {
+      return NextResponse.json(
+        { 
+          error: `File too large. Maximum size is 100MB, but received ${(file.size / 1024 / 1024).toFixed(2)}MB.`,
+          fileSize: file.size,
+          maxSize: maxFileSize
+        },
+        { status: 413 }
       );
     }
     
@@ -28,6 +45,7 @@ export async function POST(request: NextRequest) {
     
     console.log(`Server API Key: ${apiKeyMasked}`);
     console.log(`Server Secret Key: ${secretKeyMasked}`);
+    console.log(`File size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
     
     if (!API_KEY || !SECRET_KEY) {
       return NextResponse.json(
@@ -56,7 +74,7 @@ export async function POST(request: NextRequest) {
         },
         maxBodyLength: Infinity, // Allow unlimited body size
         maxContentLength: Infinity, // Allow unlimited content length
-        timeout: 60000, // 60 second timeout
+        timeout: 120000, // 2 minute timeout for large files
       }
     );
     
@@ -78,7 +96,7 @@ export async function POST(request: NextRequest) {
       if (status === 413) {
         return NextResponse.json(
           { 
-            error: 'File too large for upload. Please use a smaller file (recommended: under 10MB).',
+            error: 'File too large for upload. Please use a smaller file (recommended: under 50MB for audio files).',
             details: errorMessage,
           },
           { status: 413 }
