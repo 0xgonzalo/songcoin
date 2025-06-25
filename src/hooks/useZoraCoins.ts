@@ -29,7 +29,7 @@ async function prefetchMetadata(metadataURI: string): Promise<boolean> {
         console.log('Metadata accessible via:', gateway);
         return true;
       }
-    } catch (error) {
+    } catch {
       console.log(`Gateway ${gateway} failed`);
     }
   }

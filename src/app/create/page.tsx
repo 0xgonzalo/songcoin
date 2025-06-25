@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAccount, useConnect } from "wagmi";
-import { Address, parseEther } from "viem";
+import { Address } from "viem";
 import { useMiniApp } from "@neynar/react";
 import { Button } from "~/components/ui/Button";
 import { Input } from "~/components/ui/input";
