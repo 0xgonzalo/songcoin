@@ -1,58 +1,129 @@
 import axios, { AxiosError } from 'axios';
 
+// Get environment variables for direct API access
+const PINATA_API_KEY = process.env.NEXT_PUBLIC_PINATA_API_KEY || '';
+const PINATA_SECRET_KEY = process.env.NEXT_PUBLIC_PINATA_SECRET_KEY || '';
+
 export function getIpfsUrl(ipfsUrl: string): string {
   if (!ipfsUrl.startsWith('ipfs://')) {
     return ipfsUrl;
   }
   
   const ipfsHash = ipfsUrl.replace('ipfs://', '');
-  return `https://ipfs.io/ipfs/${ipfsHash}`;
+  return `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
 }
 
 /**
- * Upload a file to IPFS via Pinata
+ * Upload a file to IPFS via Pinata using hybrid approach
  */
 export async function uploadFileToIPFS(
   file: File, 
   onProgress?: (progress: number) => void
 ): Promise<string> {
+  try {
+    console.log(`Starting upload for file: ${file.name}, size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+    
+    // Get the file size in MB
+    const fileSizeMB = file.size / (1024 * 1024);
+    const isLargeFile = fileSizeMB > 8; // Files over 8MB use direct API
+    
+    // Check if we're running in development
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isBrowser = typeof window !== 'undefined';
+    
+    // For large files or when API keys are available, use direct API
+    if (isLargeFile || (isDevelopment && PINATA_API_KEY && PINATA_SECRET_KEY)) {
+      console.log('Using direct Pinata API');
+      return await uploadDirectToPinata(file, onProgress);
+    }
+    
+    // For smaller files in production, try API route first
+    if (isBrowser && !isDevelopment) {
+      try {
+        console.log('Using API route for small file');
+        return await uploadViaAPIRoute(file, onProgress);
+      } catch (proxyError) {
+        // If we get a 413 error or other server error, fall back to direct API
+        if (proxyError instanceof AxiosError && proxyError.response && 
+            (proxyError.response.status === 413 || proxyError.response.status >= 500)) {
+          console.log('API route failed, falling back to direct API');
+          return await uploadDirectToPinata(file, onProgress);
+        }
+        throw proxyError;
+      }
+    }
+    
+    // Default to direct API
+    return await uploadDirectToPinata(file, onProgress);
+    
+  } catch (error: unknown) {
+    console.error('Error uploading file to IPFS:', error);
+    throw error;
+  }
+}
+
+/**
+ * Upload via API route (for smaller files)
+ */
+async function uploadViaAPIRoute(file: File, onProgress?: (progress: number) => void): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await axios.post('/api/pinata/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    timeout: 120000, // 2 minute timeout
+    onUploadProgress: (progressEvent) => {
+      if (onProgress && progressEvent.total) {
+        const progress = (progressEvent.loaded / progressEvent.total) * 100;
+        onProgress(progress);
+      }
+    },
+  });
+
+  if (response.data.IpfsHash) {
+    console.log(`Upload via API route successful: ${response.data.IpfsHash}`);
+    return response.data.IpfsHash;
+  } else {
+    throw new Error('No IPFS hash returned from API route upload');
+  }
+}
+
+/**
+ * Upload directly to Pinata API (for larger files or when API keys are available)
+ */
+async function uploadDirectToPinata(file: File, onProgress?: (progress: number) => void): Promise<string> {
+  // Verify API keys are available for direct upload
+  if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
+    throw new Error('Pinata API keys are not configured for direct upload. Please set NEXT_PUBLIC_PINATA_API_KEY and NEXT_PUBLIC_PINATA_SECRET_KEY environment variables.');
+  }
+
   const formData = new FormData();
   formData.append('file', file);
 
-  try {
-    const response = await axios.post('/api/pinata/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      onUploadProgress: (progressEvent) => {
-        if (onProgress && progressEvent.total) {
-          const progress = (progressEvent.loaded / progressEvent.total) * 100;
-          onProgress(progress);
-        }
-      },
-    });
-
-    if (response.data.IpfsHash) {
-      return response.data.IpfsHash;
-    } else {
-      throw new Error('No IPFS hash returned from upload');
-    }
-  } catch (error: unknown) {
-    console.error('Error uploading file to IPFS:', error);
-    
-    if (error instanceof AxiosError) {
-      if (error.response?.status === 413) {
-        throw new Error('File too large for upload. Please use a smaller file.');
-      } else if (error.response?.status === 401) {
-        throw new Error('Authentication failed. Please check your Pinata API configuration.');
-      } else {
-        throw new Error(`Upload failed: ${error.message}`);
+  const response = await axios.post('https://api.pinata.cloud/pinning/pinFileToIPFS', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+      'pinata_api_key': PINATA_API_KEY,
+      'pinata_secret_api_key': PINATA_SECRET_KEY
+    },
+    onUploadProgress: (progressEvent) => {
+      if (onProgress && progressEvent.total) {
+        const progress = (progressEvent.loaded / progressEvent.total) * 100;
+        onProgress(progress);
       }
-    } else if (error instanceof Error) {
-      throw new Error(`Upload failed: ${error.message}`);
-    } else {
-      throw new Error('Upload failed: Unknown error');
-    }
+    },
+    maxBodyLength: Infinity,
+    maxContentLength: Infinity,
+    timeout: 120000 // 2 minute timeout for direct uploads
+  });
+
+  if (response.data.IpfsHash) {
+    console.log(`Direct upload successful: ${response.data.IpfsHash}`);
+    return response.data.IpfsHash;
+  } else {
+    throw new Error('No IPFS hash returned from direct upload');
   }
 }
 
@@ -65,6 +136,7 @@ export async function uploadJSONToIPFS(jsonData: Record<string, unknown>): Promi
       headers: {
         'Content-Type': 'application/json',
       },
+      timeout: 30000, // 30 second timeout for JSON uploads
     });
 
     if (response.data.uri) {
@@ -81,7 +153,8 @@ export async function uploadJSONToIPFS(jsonData: Record<string, unknown>): Promi
       if (error.response?.status === 401) {
         throw new Error('Authentication failed. Please check your Pinata API configuration.');
       } else {
-        throw new Error(`JSON upload failed: ${error.message}`);
+        const errorMessage = error.response?.data?.error || error.message;
+        throw new Error(`JSON upload failed: ${errorMessage}`);
       }
     } else if (error instanceof Error) {
       throw new Error(`JSON upload failed: ${error.message}`);
