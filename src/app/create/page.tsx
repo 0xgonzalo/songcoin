@@ -3,7 +3,8 @@
 import React, { useState, useRef } from 'react';
 import { useAccount, useConnect } from 'wagmi';
 import { Address, parseEther } from 'viem';
-import { Music, Upload, Trash2, LogIn } from 'lucide-react';
+import { Music, LogIn } from 'lucide-react';
+import Image from 'next/image';
 import { useZoraCoins, CoinData } from '~/hooks/useZoraCoins';
 import { uploadFileToIPFS, uploadJSONToIPFS } from '~/lib/pinataService';
 
@@ -14,102 +15,91 @@ const MUSIC_GENRES = [
 
 export default function CreatePage() {
   const { address, isConnected } = useAccount();
+  const { connectors, connect } = useConnect();
   const { 
     createMusicCoin, 
     isCreatingCoin, 
     createCoinSuccess, 
-    createCoinError,
     createdCoinAddress
   } = useZoraCoins();
-  
-  const audioFileRef = useRef<HTMLInputElement>(null);
-  const coverArtRef = useRef<HTMLInputElement>(null);
-  
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [previewAudio, setPreviewAudio] = useState<string | null>(null);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [uploadStage, setUploadStage] = useState<'idle' | 'uploading_audio' | 'uploading_cover' | 'uploading_metadata' | 'creating_coin'>('idle');
-  
+
   const [formState, setFormState] = useState({
     name: '',
     symbol: '',
     description: '',
-    genre: '',
-    initialPurchaseWei: '0.01',
     artist: address || '',
+    genre: '',
+    initialPurchaseWei: '0'
   });
-  
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { connect, connectors } = useConnect();
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState<'uploading_audio' | 'uploading_cover' | 'uploading_metadata' | 'creating_coin'>('uploading_audio');
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewAudio, setPreviewAudio] = useState<string | null>(null);
+
+  const audioFileRef = useRef<HTMLInputElement>(null);
+  const coverArtRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
     setFormState(prev => ({
       ...prev,
       [name]: value
     }));
     
+    // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
   const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const fileSizeMB = file.size / (1024 * 1024);
-      
-      if (fileSizeMB > 50) {
-        setErrors(prev => ({
-          ...prev,
-          audio: `File is too large (${fileSizeMB.toFixed(2)}MB). Maximum size is 50MB.`
-        }));
+      // Validate file size (50MB limit)
+      if (file.size > 50 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, audio: 'Audio file must be less than 50MB' }));
         return;
       }
       
-      const audioUrl = URL.createObjectURL(file);
-      setPreviewAudio(audioUrl);
-      
-      if (errors.audio) {
-        setErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors.audio;
-          return newErrors;
-        });
+      // Validate file type
+      if (!file.type.startsWith('audio/')) {
+        setErrors(prev => ({ ...prev, audio: 'Please select a valid audio file' }));
+        return;
       }
+      
+      // Create preview URL
+      const url = URL.createObjectURL(file);
+      setPreviewAudio(url);
+      
+      // Clear any previous errors
+      setErrors(prev => ({ ...prev, audio: '' }));
     }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const fileSizeMB = file.size / (1024 * 1024);
-      
-      if (fileSizeMB > 5) {
-        setErrors(prev => ({
-          ...prev,
-          image: `File is too large (${fileSizeMB.toFixed(2)}MB). Maximum size is 5MB.`
-        }));
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, image: 'Image file must be less than 5MB' }));
         return;
       }
       
-      const imageUrl = URL.createObjectURL(file);
-      setPreviewImage(imageUrl);
-      
-      if (errors.image) {
-        setErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors.image;
-          return newErrors;
-        });
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setErrors(prev => ({ ...prev, image: 'Please select a valid image file' }));
+        return;
       }
+      
+      // Create preview URL
+      const url = URL.createObjectURL(file);
+      setPreviewImage(url);
+      
+      // Clear any previous errors
+      setErrors(prev => ({ ...prev, image: '' }));
     }
   };
 
@@ -195,9 +185,10 @@ export default function CreatePage() {
       await createMusicCoin(coinData);
       setUploadProgress(100);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating coin:', error);
-      setErrors({ submit: error.message || 'Failed to create coin' });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create coin';
+      setErrors({ submit: errorMessage });
       setIsUploading(false);
     }
   };
@@ -337,7 +328,13 @@ export default function CreatePage() {
               />
               {errors.image && <p className="text-red-500 text-sm mt-1">{errors.image}</p>}
               {previewImage && (
-                <img src={previewImage} alt="Cover preview" className="w-full h-32 object-cover mt-2 rounded" />
+                <Image 
+                  src={previewImage} 
+                  alt="Cover preview" 
+                  width={400}
+                  height={128}
+                  className="w-full h-32 object-cover mt-2 rounded" 
+                />
               )}
             </div>
           </div>
