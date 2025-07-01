@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
-import { useAccount, useConnect } from 'wagmi';
-import { Address, parseEther } from 'viem';
+import { useAccount } from 'wagmi';
+import { parseEther } from 'viem';
 import { Music, LogIn } from 'lucide-react';
 import Image from 'next/image';
 import { useZoraCoins, CoinData } from '~/hooks/useZoraCoins';

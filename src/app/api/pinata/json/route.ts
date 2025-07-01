@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 // Use the new configuration format for Next.js App Router
 export const maxDuration = 60; // Extend the timeout to 60 seconds
@@ -39,58 +39,43 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Set pinning options
-    const pinataOptions = {
-      pinataMetadata: {
-        name: jsonData.name ? `SongCoin - ${jsonData.name} Metadata` : 'SongCoin Metadata',
+    // Upload JSON to Pinata
+    const response = await axios.post('https://api.pinata.cloud/pinning/pinJSONToIPFS', jsonData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'pinata_api_key': API_KEY,
+        'pinata_secret_api_key': SECRET_KEY,
       },
-      pinataOptions: {
-        cidVersion: 0,
-        wrapWithDirectory: false
-      }
-    };
-    
-    // Send the request to Pinata
-    const response = await axios.post(
-      'https://api.pinata.cloud/pinning/pinJSONToIPFS',
-      jsonData,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'pinata_api_key': API_KEY,
-          'pinata_secret_api_key': SECRET_KEY
-        },
-        maxBodyLength: Infinity,
-      }
-    );
-    
-    // Return the IPFS hash
-    return NextResponse.json({
-      IpfsHash: response.data.IpfsHash,
-      uri: `ipfs://${response.data.IpfsHash}`
+      timeout: 30000, // 30 second timeout
     });
     
-  } catch (error: any) {
+    console.log('Pinata JSON response:', response.data);
+    
+    return NextResponse.json({ 
+      IpfsHash: response.data.IpfsHash,
+      cid: response.data.IpfsHash,
+      uri: `ipfs://${response.data.IpfsHash}`
+    });
+  } catch (error) {
     console.error('Error uploading JSON to Pinata:', error);
     
-    // If authentication error, provide more detailed message
-    if (error.response?.status === 401) {
-      return NextResponse.json(
-        { 
-          error: 'Authentication failed with Pinata. Please check your API keys in the server environment variables.',
-          details: error.message,
-        },
-        { status: 401 }
-      );
+    if (error instanceof AxiosError) {
+      if (error.response?.status === 401) {
+        return NextResponse.json(
+          { error: 'Invalid Pinata API credentials' },
+          { status: 401 }
+        );
+      } else if (error.response?.data?.error) {
+        return NextResponse.json(
+          { error: `Pinata error: ${error.response.data.error}` },
+          { status: error.response.status || 500 }
+        );
+      }
     }
     
     return NextResponse.json(
-      { 
-        error: 'Failed to upload metadata to IPFS',
-        details: error.message,
-        response: error.response?.data
-      },
-      { status: error.response?.status || 500 }
+      { error: 'Failed to upload JSON to IPFS' },
+      { status: 500 }
     );
   }
 } 

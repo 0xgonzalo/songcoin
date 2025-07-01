@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 // Use the new configuration format for Next.js App Router
 export const maxDuration = 60; // Extend the timeout to 60 seconds
@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
     const apiKeyMasked = API_KEY ? `${API_KEY.substring(0, 4)}...${API_KEY.substring(API_KEY.length - 4)}` : 'undefined';
     const secretKeyMasked = SECRET_KEY ? `${SECRET_KEY.substring(0, 4)}...${SECRET_KEY.substring(SECRET_KEY.length - 4)}` : 'undefined';
     
-    console.log(`Server API Key: ${apiKeyMasked}`);
-    console.log(`Server Secret Key: ${secretKeyMasked}`);
+    console.log(`Server API Key for Upload: ${apiKeyMasked}`);
+    console.log(`Server Secret Key for Upload: ${secretKeyMasked}`);
     
     if (!API_KEY || !SECRET_KEY) {
       return NextResponse.json(
@@ -60,43 +60,39 @@ export async function POST(request: NextRequest) {
       }
     );
     
+    console.log('Pinata upload response:', response.data);
+    
     // Return the IPFS hash
     return NextResponse.json({
-      IpfsHash: response.data.IpfsHash
+      IpfsHash: response.data.IpfsHash,
+      cid: response.data.IpfsHash
     });
     
-  } catch (error: any) {
-    console.error('Error uploading to Pinata:', error);
+  } catch (error) {
+    console.error('Error uploading file to Pinata:', error);
     
-    // Determine if this is a size limitation error
-    if (error.response?.status === 413) {
-      return NextResponse.json(
-        { 
-          error: 'File too large for upload. Please use a smaller file (recommended: under 10MB).',
-          details: error.message,
-        },
-        { status: 413 }
-      );
-    }
-    
-    // If authentication error, provide more detailed message
-    if (error.response?.status === 401) {
-      return NextResponse.json(
-        { 
-          error: 'Authentication failed with Pinata. Please check your API keys in the server environment variables.',
-          details: error.message,
-        },
-        { status: 401 }
-      );
+    if (error instanceof AxiosError) {
+      if (error.response?.status === 401) {
+        return NextResponse.json(
+          { error: 'Invalid Pinata API credentials' },
+          { status: 401 }
+        );
+      } else if (error.response?.status === 413) {
+        return NextResponse.json(
+          { error: 'File too large for upload' },
+          { status: 413 }
+        );
+      } else if (error.response?.data?.error) {
+        return NextResponse.json(
+          { error: `Pinata error: ${error.response.data.error}` },
+          { status: error.response.status || 500 }
+        );
+      }
     }
     
     return NextResponse.json(
-      { 
-        error: 'Failed to upload to IPFS',
-        details: error.message,
-        response: error.response?.data
-      },
-      { status: error.response?.status || 500 }
+      { error: 'Failed to upload file to IPFS' },
+      { status: 500 }
     );
   }
 } 
