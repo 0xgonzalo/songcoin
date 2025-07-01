@@ -15,387 +15,402 @@ const MUSIC_GENRES = [
 
 export default function CreatePage() {
   const { address, isConnected } = useAccount();
-  const { connectors, connect } = useConnect();
   const { 
     createMusicCoin, 
     isCreatingCoin, 
-    createCoinSuccess, 
+    createCoinSuccess,
     createdCoinAddress
   } = useZoraCoins();
 
-  const [formState, setFormState] = useState({
-    name: '',
-    symbol: '',
-    description: '',
-    artist: address || '',
-    genre: '',
-    initialPurchaseWei: '0'
-  });
+  // Form state
+  const [name, setName] = useState('');
+  const [symbol, setSymbol] = useState('');
+  const [description, setDescription] = useState('');
+  const [artist, setArtist] = useState('');
+  const [genre, setGenre] = useState('');
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+  const [initialPurchase, setInitialPurchase] = useState('0.0001');
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  // Upload progress state
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStage, setUploadStage] = useState<'uploading_audio' | 'uploading_cover' | 'uploading_metadata' | 'creating_coin'>('uploading_audio');
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [previewAudio, setPreviewAudio] = useState<string | null>(null);
+  const [uploadStage, setUploadStage] = useState('');
+  const [error, setError] = useState('');
 
-  const audioFileRef = useRef<HTMLInputElement>(null);
-  const coverArtRef = useRef<HTMLInputElement>(null);
+  // File input refs
+  const coverImageInputRef = useRef<HTMLInputElement>(null);
+  const audioFileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormState(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file size (50MB limit)
-      if (file.size > 50 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, audio: 'Audio file must be less than 50MB' }));
-        return;
-      }
-      
-      // Validate file type
-      if (!file.type.startsWith('audio/')) {
-        setErrors(prev => ({ ...prev, audio: 'Please select a valid audio file' }));
-        return;
-      }
-      
-      // Create preview URL
-      const url = URL.createObjectURL(file);
-      setPreviewAudio(url);
-      
-      // Clear any previous errors
-      setErrors(prev => ({ ...prev, audio: '' }));
-    }
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, image: 'Image file must be less than 5MB' }));
+        setError('Cover image must be less than 5MB');
         return;
       }
       
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        setErrors(prev => ({ ...prev, image: 'Please select a valid image file' }));
+        setError('Please select a valid image file');
         return;
       }
       
-      // Create preview URL
-      const url = URL.createObjectURL(file);
-      setPreviewImage(url);
+      setCoverImage(file);
+      setError('');
       
-      // Clear any previous errors
-      setErrors(prev => ({ ...prev, image: '' }));
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setCoverImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    
-    if (!formState.name.trim()) newErrors.name = 'Name is required';
-    if (!formState.symbol.trim()) newErrors.symbol = 'Symbol is required';
-    if (!formState.description.trim()) newErrors.description = 'Description is required';
-    if (!formState.genre) newErrors.genre = 'Genre is required';
-    if (!audioFileRef.current?.files?.[0]) newErrors.audio = 'Audio file is required';
-    if (!coverArtRef.current?.files?.[0]) newErrors.image = 'Cover art is required';
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-
-    try {
-      setIsUploading(true);
-      setUploadProgress(0);
-      
-      const audioFile = audioFileRef.current?.files?.[0];
-      const imageFile = coverArtRef.current?.files?.[0];
-      
-      if (!audioFile || !imageFile) {
-        throw new Error('Audio file and cover art are required');
+  const handleAudioFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size (50MB limit)
+      if (file.size > 50 * 1024 * 1024) {
+        setError('Audio file must be less than 50MB');
+        return;
       }
       
-      // Upload audio file
-      setUploadStage('uploading_audio');
-      const audioCID = await uploadFileToIPFS(audioFile, (progress) => {
-        setUploadProgress(progress * 0.3);
-      });
+      // Validate file type
+      if (!file.type.startsWith('audio/')) {
+        setError('Please select a valid audio file');
+        return;
+      }
       
-      // Upload image file
-      setUploadStage('uploading_cover');
-      const imageCID = await uploadFileToIPFS(imageFile, (progress) => {
-        setUploadProgress(30 + progress * 0.3);
+      setAudioFile(file);
+      setError('');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!isConnected || !address) {
+      setError('Please connect your wallet first');
+      return;
+    }
+
+    if (!coverImage || !audioFile) {
+      setError('Please select both cover image and audio file');
+      return;
+    }
+
+    if (!name || !symbol || !description || !artist) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    setIsUploading(true);
+    setError('');
+    setUploadProgress(0);
+
+    try {
+      // Stage 1: Upload cover image
+      setUploadStage('Uploading cover image...');
+      const coverImageCid = await uploadFileToIPFS(coverImage, (progress) => {
+        setUploadProgress(progress * 0.3); // 30% of total progress
       });
-      
-      // Create metadata
-      setUploadStage('uploading_metadata');
+
+      // Stage 2: Upload audio file
+      setUploadStage('Uploading audio file...');
+      const audioFileCid = await uploadFileToIPFS(audioFile, (progress) => {
+        setUploadProgress(30 + (progress * 0.4)); // 30-70% of total progress
+      });
+
+      // Stage 3: Upload metadata
+      setUploadStage('Uploading metadata...');
       const metadata = {
-        name: formState.name,
-        description: formState.description,
-        image: `ipfs://${imageCID}`,
-        animation_url: `ipfs://${audioCID}`,
+        name,
+        description,
+        image: `ipfs://${coverImageCid}`,
+        animation_url: `ipfs://${audioFileCid}`,
         attributes: [
-          {
-            trait_type: "Artist",
-            value: formState.artist
-          },
-          {
-            trait_type: "Genre",
-            value: formState.genre
-          },
-          {
-            trait_type: "Type",
-            value: "Music"
-          }
+          { trait_type: 'Artist', value: artist },
+          { trait_type: 'Genre', value: genre || 'Other' },
+          { trait_type: 'Type', value: 'Music' }
         ]
       };
-      
-      const metadataURI = await uploadJSONToIPFS(metadata);
-      setUploadProgress(70);
-      
-      // Create the coin
-      setUploadStage('creating_coin');
+
+      const metadataCid = await uploadJSONToIPFS(metadata);
+      setUploadProgress(80);
+
+      // Stage 4: Create coin
+      setUploadStage('Creating coin...');
       const coinData: CoinData = {
-        name: formState.name,
-        symbol: formState.symbol,
-        uri: metadataURI,
-        payoutRecipient: formState.artist as Address,
-        initialPurchaseWei: parseEther(formState.initialPurchaseWei || '0'),
-        platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627"
+        name,
+        symbol: symbol.toUpperCase(),
+        uri: `ipfs://${metadataCid}`,
+        payoutRecipient: address,
+        platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627",
+        initialPurchaseWei: parseEther(initialPurchase)
       };
-      
+
       await createMusicCoin(coinData);
       setUploadProgress(100);
-      
-    } catch (error: unknown) {
-      console.error('Error creating coin:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create coin';
-      setErrors({ submit: errorMessage });
+      setUploadStage('Coin created successfully!');
+
+    } catch (err) {
+      console.error('Error creating coin:', err);
+      if (err instanceof Error) {
+        setError(`Error: ${err.message}`);
+      } else {
+        setError('An unexpected error occurred');
+      }
+    } finally {
       setIsUploading(false);
     }
   };
 
-  if (!isConnected) {
-    return (
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-2xl mb-4 font-bold">Connect Your Wallet</h2>
-          <p className="text-gray-600 mb-6">
-            Please connect your wallet to create a music coin.
-          </p>
-          <button 
-            onClick={() => {
-              const metaMaskConnector = connectors.find(c => c.name === 'MetaMask');
-              if (metaMaskConnector) {
-                connect({ connector: metaMaskConnector });
-              }
-            }} 
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto"
-          >
-            <LogIn size={18} />
-            Connect Wallet
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  // Show success state
   if (createCoinSuccess && createdCoinAddress) {
     return (
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-2xl mb-4 font-bold text-green-600">Coin Created Successfully!</h2>
-          <p className="text-gray-600 mb-4">
-            Your music coin has been created at address:
-          </p>
-          <code className="bg-gray-100 p-2 rounded text-sm break-all">
-            {createdCoinAddress}
-          </code>
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white/10 backdrop-blur-md rounded-2xl p-8 text-center">
+          <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Music className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-4">Coin Created Successfully!</h2>
+          <p className="text-gray-300 mb-6">Your music coin has been created and is now live on the blockchain.</p>
+          <div className="bg-black/20 rounded-lg p-4 mb-6">
+            <p className="text-sm text-gray-400 mb-2">Coin Address:</p>
+            <p className="text-white font-mono text-sm break-all">{createdCoinAddress}</p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 transition-all"
+          >
+            Create Another Coin
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 text-center">Create Music Coin</h1>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Name</label>
-              <input
-                type="text"
-                name="name"
-                value={formState.name}
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Song title"
-              />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-2">Symbol</label>
-              <input
-                type="text"
-                name="symbol"
-                value={formState.symbol}
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="SONG"
-              />
-              {errors.symbol && <p className="text-red-500 text-sm mt-1">{errors.symbol}</p>}
-            </div>
-          </div>
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-4">Create Music Coin</h1>
+          <p className="text-gray-300">Upload your music and create a tradeable coin</p>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Description</label>
-            <textarea
-              name="description"
-              value={formState.description}
-              onChange={handleChange}
-              rows={3}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Describe your music..."
-            />
-            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+        {!isConnected ? (
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 text-center">
+            <LogIn className="w-16 h-16 text-white mx-auto mb-6" />
+            <h2 className="text-2xl font-bold text-white mb-4">Connect Your Wallet</h2>
+            <p className="text-gray-300 mb-6">You need to connect your wallet to create a music coin</p>
           </div>
+        ) : (
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Basic Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-white font-semibold mb-2">
+                    Coin Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g., My Amazing Song"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-white font-semibold mb-2">
+                    Symbol *
+                  </label>
+                  <input
+                    type="text"
+                    value={symbol}
+                    onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                    placeholder="e.g., SONG"
+                    maxLength={10}
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Genre</label>
-            <select
-              name="genre"
-              value={formState.genre}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Select a genre</option>
-              {MUSIC_GENRES.map(genre => (
-                <option key={genre} value={genre}>{genre}</option>
-              ))}
-            </select>
-            {errors.genre && <p className="text-red-500 text-sm mt-1">{errors.genre}</p>}
-          </div>
-
-          {/* File Uploads */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Audio File</label>
-              <input
-                ref={audioFileRef}
-                type="file"
-                accept="audio/*"
-                onChange={handleAudioChange}
-                className="w-full p-3 border border-gray-300 rounded-lg"
-              />
-              {errors.audio && <p className="text-red-500 text-sm mt-1">{errors.audio}</p>}
-              {previewAudio && (
-                <audio controls className="w-full mt-2">
-                  <source src={previewAudio} />
-                </audio>
-              )}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-2">Cover Art</label>
-              <input
-                ref={coverArtRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="w-full p-3 border border-gray-300 rounded-lg"
-              />
-              {errors.image && <p className="text-red-500 text-sm mt-1">{errors.image}</p>}
-              {previewImage && (
-                <Image 
-                  src={previewImage} 
-                  alt="Cover preview" 
-                  width={400}
-                  height={128}
-                  className="w-full h-32 object-cover mt-2 rounded" 
+              <div>
+                <label className="block text-white font-semibold mb-2">
+                  Description *
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe your music..."
+                  rows={3}
+                  className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  required
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-white font-semibold mb-2">
+                    Artist *
+                  </label>
+                  <input
+                    type="text"
+                    value={artist}
+                    onChange={(e) => setArtist(e.target.value)}
+                    placeholder="Artist name"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-white font-semibold mb-2">
+                    Genre
+                  </label>
+                  <select
+                    value={genre}
+                    onChange={(e) => setGenre(e.target.value)}
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">Select genre</option>
+                    {MUSIC_GENRES.map((g) => (
+                      <option key={g} value={g} className="bg-gray-800">
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* File Uploads */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-white font-semibold mb-2">
+                    Cover Image * (Max 5MB)
+                  </label>
+                  <div
+                    onClick={() => coverImageInputRef.current?.click()}
+                    className="w-full h-48 bg-white/10 border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/20 transition-all"
+                  >
+                    {coverImagePreview ? (
+                      <Image
+                        src={coverImagePreview}
+                        alt="Cover preview"
+                        width={192}
+                        height={192}
+                        className="w-full h-full object-cover rounded-xl"
+                      />
+                    ) : (
+                      <>
+                        <Music className="w-12 h-12 text-gray-400 mb-2" />
+                        <p className="text-gray-400 text-center">
+                          Click to upload cover image
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <input
+                    ref={coverImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverImageChange}
+                    className="hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white font-semibold mb-2">
+                    Audio File * (Max 50MB)
+                  </label>
+                  <div
+                    onClick={() => audioFileInputRef.current?.click()}
+                    className="w-full h-48 bg-white/10 border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/20 transition-all"
+                  >
+                    {audioFile ? (
+                      <div className="text-center">
+                        <Music className="w-12 h-12 text-green-400 mb-2 mx-auto" />
+                        <p className="text-white font-semibold">{audioFile.name}</p>
+                        <p className="text-gray-400 text-sm">
+                          {(audioFile.size / (1024 * 1024)).toFixed(2)} MB
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <Music className="w-12 h-12 text-gray-400 mb-2" />
+                        <p className="text-gray-400 text-center">
+                          Click to upload audio file
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <input
+                    ref={audioFileInputRef}
+                    type="file"
+                    accept="audio/*"
+                    onChange={handleAudioFileChange}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
+              {/* Initial Purchase */}
+              <div>
+                <label className="block text-white font-semibold mb-2">
+                  Initial Purchase (ETH)
+                </label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  min="0"
+                  value={initialPurchase}
+                  onChange={(e) => setInitialPurchase(e.target.value)}
+                  placeholder="0.0001"
+                  className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <p className="text-sm text-gray-400 mt-1">
+                  Amount of ETH to initially purchase when creating the coin
+                </p>
+              </div>
+
+              {/* Error Display */}
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4">
+                  <p className="text-red-200">{error}</p>
+                </div>
               )}
-            </div>
+
+              {/* Progress Display */}
+              {isUploading && (
+                <div className="bg-blue-500/20 border border-blue-500/50 rounded-xl p-4">
+                  <p className="text-blue-200 mb-2">{uploadStage}</p>
+                  <div className="w-full bg-blue-900/50 rounded-full h-2">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-blue-300 text-sm mt-1">{uploadProgress.toFixed(0)}% complete</p>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isUploading || isCreatingCoin || !coverImage || !audioFile}
+                className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-4 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {isUploading || isCreatingCoin ? 'Creating Coin...' : 'Create Music Coin'}
+              </button>
+            </form>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Initial Purchase (ETH)</label>
-            <input
-              type="number"
-              name="initialPurchaseWei"
-              value={formState.initialPurchaseWei}
-              onChange={handleChange}
-              step="0.001"
-              min="0"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          {errors.submit && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {errors.submit}
-            </div>
-          )}
-
-          {isUploading && (
-            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700"></div>
-                <span>
-                  {uploadStage === 'uploading_audio' && 'Uploading audio...'}
-                  {uploadStage === 'uploading_cover' && 'Uploading cover art...'}
-                  {uploadStage === 'uploading_metadata' && 'Uploading metadata...'}
-                  {uploadStage === 'creating_coin' && 'Creating coin...'}
-                </span>
-              </div>
-              <div className="w-full bg-blue-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                  style={{ width: `${uploadProgress}%` }}
-                ></div>
-              </div>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={isUploading || isCreatingCoin}
-            className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-          >
-            {isUploading || isCreatingCoin ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Creating...
-              </>
-            ) : (
-              <>
-                <Music size={18} />
-                Create Music Coin
-              </>
-            )}
-          </button>
-        </form>
+        )}
       </div>
     </div>
   );

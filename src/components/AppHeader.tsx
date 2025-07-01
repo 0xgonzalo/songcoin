@@ -140,18 +140,18 @@ export function AppHeader() {
               {avatarLoading && (
                 <div className="absolute inset-0 w-12 h-12 rounded-full bg-gray-700 animate-pulse border-2 border-white/20"></div>
               )}
-              <Image
-                src={profilePicture}
-                alt="Profile"
-                width={48}
-                height={48}
-                className="w-12 h-12 rounded-full border-2 border-white/20 object-cover"
+            <Image
+              src={profilePicture}
+              alt="Profile"
+              width={48}
+              height={48}
+              className="w-12 h-12 rounded-full border-2 border-white/20 object-cover"
                 onLoad={handleAvatarLoad}
                 onError={handleAvatarError}
                 onLoadStart={handleAvatarLoadStart}
                 priority
                 unoptimized // This helps with external URLs
-              />
+            />
             </div>
             {/* Online indicator */}
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-900"></div>

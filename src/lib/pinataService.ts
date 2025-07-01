@@ -21,7 +21,7 @@ export async function uploadFileToIPFS(file: File, onProgress?: (progress: numbe
   try {
     // Detect if we're in a browser environment (client-side)
     if (typeof window !== 'undefined') {
-      // Client-side: use API routes
+      // Client-side: Use API route
       const formData = new FormData();
       formData.append('file', file);
 
@@ -37,9 +37,9 @@ export async function uploadFileToIPFS(file: File, onProgress?: (progress: numbe
         },
       });
 
-      return response.data.IpfsHash;
+      return response.data.IpfsHash || response.data.cid;
     } else {
-      // Server-side: direct Pinata API call
+      // Server-side: Direct API call (fallback)
       if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
         throw new Error('Pinata API keys not configured');
       }
@@ -47,26 +47,23 @@ export async function uploadFileToIPFS(file: File, onProgress?: (progress: numbe
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post(
-        'https://api.pinata.cloud/pinning/pinFileToIPFS',
-        formData,
-        {
-          headers: {
-            'pinata_api_key': PINATA_API_KEY,
-            'pinata_secret_api_key': PINATA_SECRET_KEY,
-          },
-          onUploadProgress: (progressEvent) => {
-            if (onProgress && progressEvent.total) {
-              const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              onProgress(progress);
-            }
-          },
-        }
-      );
+      const response = await axios.post('https://api.pinata.cloud/pinning/pinFileToIPFS', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'pinata_api_key': PINATA_API_KEY,
+          'pinata_secret_api_key': PINATA_SECRET_KEY,
+        },
+        onUploadProgress: (progressEvent) => {
+          if (onProgress && progressEvent.total) {
+            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            onProgress(progress);
+          }
+        },
+      });
 
       return response.data.IpfsHash;
     }
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Error uploading file to IPFS:', error);
     
     if (error instanceof AxiosError) {
@@ -79,8 +76,7 @@ export async function uploadFileToIPFS(file: File, onProgress?: (progress: numbe
       }
     }
     
-    const errorMessage = error instanceof Error ? error.message : 'Failed to upload file to IPFS';
-    throw new Error(errorMessage);
+    throw new Error('Failed to upload file to IPFS');
   }
 }
 
@@ -91,7 +87,7 @@ export async function uploadJSONToIPFS(metadata: Record<string, unknown>): Promi
   try {
     // Detect if we're in a browser environment (client-side)
     if (typeof window !== 'undefined') {
-      // Client-side: use API routes
+      // Client-side: Use API route
       const response = await axios.post('/api/pinata/json', {
         metadata
       }, {
@@ -100,29 +96,24 @@ export async function uploadJSONToIPFS(metadata: Record<string, unknown>): Promi
         },
       });
 
-      const cid = response.data.IpfsHash || response.data.cid;
-      return `ipfs://${cid}`;
+      return response.data.IpfsHash || response.data.cid;
     } else {
-      // Server-side: direct Pinata API call
+      // Server-side: Direct API call (fallback)
       if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
         throw new Error('Pinata API keys not configured');
       }
 
-      const response = await axios.post(
-        'https://api.pinata.cloud/pinning/pinJSONToIPFS',
-        metadata,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'pinata_api_key': PINATA_API_KEY,
-            'pinata_secret_api_key': PINATA_SECRET_KEY,
-          },
-        }
-      );
+      const response = await axios.post('https://api.pinata.cloud/pinning/pinJSONToIPFS', metadata, {
+        headers: {
+          'Content-Type': 'application/json',
+          'pinata_api_key': PINATA_API_KEY,
+          'pinata_secret_api_key': PINATA_SECRET_KEY,
+        },
+      });
 
-      return `ipfs://${response.data.IpfsHash}`;
+      return response.data.IpfsHash;
     }
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Error uploading JSON to IPFS:', error);
     
     if (error instanceof AxiosError) {
@@ -133,7 +124,6 @@ export async function uploadJSONToIPFS(metadata: Record<string, unknown>): Promi
       }
     }
     
-    const errorMessage = error instanceof Error ? error.message : 'Failed to upload JSON to IPFS';
-    throw new Error(errorMessage);
+    throw new Error('Failed to upload JSON to IPFS');
   }
 } 
