@@ -46,11 +46,7 @@ export default function CreatePage() {
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Cover image must be less than 5MB');
-        return;
-      }
+      console.log(`Selected cover image: ${file.name}, Size: ${(file.size / (1024 * 1024)).toFixed(2)} MB`);
       
       // Validate file type
       if (!file.type.startsWith('image/')) {
@@ -72,30 +68,22 @@ export default function CreatePage() {
 
   const handleAudioFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    setError('');
+    
     if (file) {
-      // Validate file size (50MB limit)
+      console.log(`Selected audio file: ${file.name}, Size: ${(file.size / (1024 * 1024)).toFixed(2)} MB`);
+      
+      if (!file.type.startsWith('audio/')) {
+        setError('Please select a valid audio file');
+        return;
+      }
+      
       if (file.size > 50 * 1024 * 1024) {
         setError('Audio file must be less than 50MB');
         return;
       }
       
-      // Get file extension
-      const fileExtension = file.name.split('.').pop()?.toLowerCase();
-      
-      // List of supported audio formats
-      const supportedFormats = ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma'];
-      
-      // Validate file type - check both MIME type and file extension
-      const isValidMimeType = file.type.startsWith('audio/');
-      const isValidExtension = fileExtension && supportedFormats.includes(fileExtension);
-      
-      if (!isValidMimeType && !isValidExtension) {
-        setError(`Please select a valid audio file. Supported formats: ${supportedFormats.join(', ')}`);
-        return;
-      }
-      
       setAudioFile(file);
-      setError('');
     }
   };
 
@@ -122,19 +110,19 @@ export default function CreatePage() {
     setUploadProgress(0);
 
     try {
-      // Stage 1: Upload cover image
-      setUploadStage('Uploading cover image...');
-      const coverImageCid = await uploadFileToIPFS(coverImage, (progress) => {
-        setUploadProgress(progress * 0.3); // 30% of total progress
-      });
+      console.log('🎵 Starting coin creation process...');
+      
+      // Stage 1: Upload files to IPFS
+      setUploadStage('Uploading files to IPFS...');
+      const [coverImageCid, audioFileCid] = await Promise.all([
+        uploadFileToIPFS(coverImage),
+        uploadFileToIPFS(audioFile)
+      ]);
+      
+      console.log('✅ Files uploaded:', { coverImageCid, audioFileCid });
+      setUploadProgress(50);
 
-      // Stage 2: Upload audio file
-      setUploadStage('Uploading audio file...');
-      const audioFileCid = await uploadFileToIPFS(audioFile, (progress) => {
-        setUploadProgress(30 + (progress * 0.4)); // 30-70% of total progress
-      });
-
-      // Stage 3: Upload metadata
+      // Stage 2: Upload metadata
       setUploadStage('Uploading metadata...');
       const metadata = {
         name,
@@ -149,9 +137,10 @@ export default function CreatePage() {
       };
 
       const metadataCid = await uploadJSONToIPFS(metadata);
-      setUploadProgress(80);
+      console.log('✅ Metadata uploaded:', metadataCid);
+      setUploadProgress(75);
 
-      // Stage 4: Create coin
+      // Stage 3: Create coin
       setUploadStage('Creating coin...');
       const coinData: CoinData = {
         name,
@@ -167,12 +156,9 @@ export default function CreatePage() {
       setUploadStage('Coin created successfully!');
 
     } catch (err) {
-      console.error('Error creating coin:', err);
-      if (err instanceof Error) {
-        setError(`Error: ${err.message}`);
-      } else {
-        setError('An unexpected error occurred');
-      }
+      console.error('❌ Coin creation error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create music coin';
+      setError(errorMessage);
     } finally {
       setIsUploading(false);
     }
@@ -338,7 +324,7 @@ export default function CreatePage() {
                   <label className="block text-white font-semibold mb-2">
                     Audio File * (Max 50MB)
                     <span className="block text-sm text-gray-400 font-normal">
-                      Supported: MP3, WAV, OGG, FLAC, M4A, AAC, WMA
+                      Supported: MP3, WAV, OGG, FLAC, M4A, AAC
                     </span>
                   </label>
                   <div
@@ -365,7 +351,7 @@ export default function CreatePage() {
                   <input
                     ref={audioFileInputRef}
                     type="file"
-                    accept="audio/*,.mp3,.wav,.ogg,.flac,.m4a,.aac,.wma"
+                    accept="audio/*,audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/aac,audio/m4a,.mp3,.wav,.ogg,.aac,.m4a"
                     onChange={handleAudioFileChange}
                     className="hidden"
                   />

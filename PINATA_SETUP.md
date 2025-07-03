@@ -39,9 +39,9 @@ PINATA_SECRET_KEY=your_pinata_secret_key_here
 
 ## 4. File Size Limits
 
-The current configuration supports:
+The current configuration supports (direct upload to Pinata):
 - **Images**: Up to 5MB (PNG, JPG, etc.)
-- **Audio**: Up to 50MB (MP3, WAV)
+- **Audio**: Up to 50MB (MP3, WAV, OGG, FLAC, M4A, AAC) - Direct upload bypasses Vercel limits
 
 ## 5. Testing
 
@@ -55,15 +55,21 @@ To test your Pinata integration:
 
 **Authentication Error**: Double-check your API keys are correct and have the right permissions.
 
-**Upload Timeout**: Large files may take time to upload. The timeout is set to 60 seconds.
+**Upload Timeout**: Large files may take time to upload. Direct uploads to Pinata have no artificial timeout limits.
 
-**File Too Large**: Reduce your file sizes or increase the limits in the API routes if needed.
+**File Too Large**: Files up to 50MB are supported. If you need larger files:
+- Compress your audio files
+- Use Pinata's chunked upload for very large files
+- Consider splitting longer audio files
 
 ## Features
 
 The integration provides:
-- ✅ File upload progress tracking
+- ✅ Direct client-side uploads to Pinata (bypasses Vercel limitations)
+- ✅ Support for larger file sizes (up to 50MB)
+- ✅ Parallel file uploads for faster processing
 - ✅ Error handling with user-friendly messages
+- ✅ No dependency on Vercel API routes
 - ✅ Support for multiple IPFS gateways
 - ✅ Automatic metadata generation for Zora coins
 - ✅ Retry logic for failed uploads 

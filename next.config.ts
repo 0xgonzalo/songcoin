@@ -28,7 +28,15 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'gateway.pinata.cloud',
+      },
     ],
+  },
+  // Configure experimental features for large file handling
+  experimental: {
+    serverComponentsExternalPackages: [],
   },
 };
 
