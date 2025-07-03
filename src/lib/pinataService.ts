@@ -30,7 +30,8 @@ export function getIpfsUrl(ipfsHashOrUri: string): string {
 /**
  * Upload a file to IPFS via Pinata
  */
-export async function uploadFileToIPFS(file: File, _onProgress?: (progress: number) => void): Promise<string> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function uploadFileToIPFS(file: File, onProgress?: (progress: number) => void): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
 
