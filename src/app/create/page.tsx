@@ -79,9 +79,18 @@ export default function CreatePage() {
         return;
       }
       
-      // Validate file type
-      if (!file.type.startsWith('audio/')) {
-        setError('Please select a valid audio file');
+      // Get file extension
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      
+      // List of supported audio formats
+      const supportedFormats = ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma'];
+      
+      // Validate file type - check both MIME type and file extension
+      const isValidMimeType = file.type.startsWith('audio/');
+      const isValidExtension = fileExtension && supportedFormats.includes(fileExtension);
+      
+      if (!isValidMimeType && !isValidExtension) {
+        setError(`Please select a valid audio file. Supported formats: ${supportedFormats.join(', ')}`);
         return;
       }
       
@@ -328,6 +337,9 @@ export default function CreatePage() {
                 <div>
                   <label className="block text-white font-semibold mb-2">
                     Audio File * (Max 50MB)
+                    <span className="block text-sm text-gray-400 font-normal">
+                      Supported: MP3, WAV, OGG, FLAC, M4A, AAC, WMA
+                    </span>
                   </label>
                   <div
                     onClick={() => audioFileInputRef.current?.click()}
@@ -353,7 +365,7 @@ export default function CreatePage() {
                   <input
                     ref={audioFileInputRef}
                     type="file"
-                    accept="audio/*"
+                    accept="audio/*,.mp3,.wav,.ogg,.flac,.m4a,.aac,.wma"
                     onChange={handleAudioFileChange}
                     className="hidden"
                   />
