@@ -26,7 +26,12 @@ Add the following to your `.env.local` file:
 
 ```bash
 # Pinata API Keys for IPFS uploads
-PINATA_API_KEY=9ba1d566fe4cac5ab90e
+NEXT_PUBLIC_PINATA_API_KEY=your_pinata_api_key_here
+NEXT_PUBLIC_PINATA_SECRET_KEY=your_pinata_secret_key_here
+NEXT_PUBLIC_PINATA_GATEWAY=https://gateway.pinata.cloud/ipfs/
+
+# Optional: Server-side keys (recommended for production)
+PINATA_API_KEY=your_pinata_api_key_here
 PINATA_SECRET_KEY=your_pinata_secret_key_here
 ```
 
