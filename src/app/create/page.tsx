@@ -143,7 +143,6 @@ export default function CreatePage() {
       
       // Step 1: Upload cover image
       setCurrentStep('Uploading cover image...');
-      setUploadProgress(prev => ({ ...prev, coverImage: 50 }));
       const coverImageCid = await uploadFileToIPFS(coverImage, (progress) => {
         setUploadProgress(prev => ({ ...prev, coverImage: progress }));
       });
@@ -151,7 +150,6 @@ export default function CreatePage() {
       
       // Step 2: Upload audio file
       setCurrentStep('Uploading audio file...');
-      setUploadProgress(prev => ({ ...prev, audioFile: 50 }));
       const audioFileCid = await uploadFileToIPFS(audioFile, (progress) => {
         setUploadProgress(prev => ({ ...prev, audioFile: progress }));
       });
@@ -159,62 +157,103 @@ export default function CreatePage() {
 
       // Step 3: Create and upload metadata
       setCurrentStep('Creating metadata...');
+      
+      // Clean CIDs - remove ipfs:// prefix if present
+      const cleanAudioCID = audioFileCid.replace('ipfs://', '');
+      const cleanImageCID = coverImageCid.replace('ipfs://', '');
+      
+      // Validate CIDs before proceeding
+      if (!cleanAudioCID || !cleanImageCID) {
+        throw new Error('Failed to get valid IPFS CIDs for audio or image');
+      }
+
+      // Create metadata object following Zora's expected format
       const metadata = {
         name,
         description,
-        image: `ipfs://${coverImageCid}`,
-        animation_url: `ipfs://${audioFileCid}`,
+        image: `ipfs://${cleanImageCID}`,
+        animation_url: `ipfs://${cleanAudioCID}`,
         attributes: [
-          { trait_type: 'Artist', value: artist },
-          { trait_type: 'Genre', value: genre || 'Other' },
-          { trait_type: 'Type', value: 'Music' },
-          { trait_type: 'File Type', value: audioFile.type },
-          { trait_type: 'File Size', value: `${(audioFile.size / (1024 * 1024)).toFixed(2)} MB` }
+          {
+            trait_type: "Artist",
+            value: artist
+          },
+          {
+            trait_type: "Genre", 
+            value: genre || 'Other'
+          },
+          {
+            trait_type: "Type",
+            value: "Music"
+          },
+          {
+            trait_type: "File Type",
+            value: audioFile.type
+          },
+          {
+            trait_type: "File Size",
+            value: `${(audioFile.size / (1024 * 1024)).toFixed(2)} MB`
+          }
         ]
       };
 
-      const metadataCid = await uploadJSONToIPFS(metadata);
+      console.log('Uploading metadata:', JSON.stringify(metadata, null, 2));
+      
+      const metadataURI = await uploadJSONToIPFS(metadata);
+      
+      // Validate the returned metadata URI
+      if (!metadataURI || !metadataURI.startsWith('ipfs://')) {
+        throw new Error('Failed to get valid metadata URI from IPFS');
+      }
+      
       setUploadProgress(prev => ({ ...prev, metadata: 100 }));
-      console.log('✅ Metadata uploaded:', metadataCid);
+      console.log('✅ Metadata uploaded:', metadataURI);
 
       // Step 4: Validate metadata accessibility
       setCurrentStep('Validating metadata accessibility...');
-      console.log('🔍 Validating metadata accessibility across IPFS gateways...');
       setUploadProgress(prev => ({ ...prev, validation: 50 }));
+      
+      // Pause briefly to ensure IPFS propagation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setUploadProgress(prev => ({ ...prev, validation: 100 }));
 
       // Step 5: Create coin
       setCurrentStep('Creating coin on blockchain...');
-      setUploadProgress(prev => ({ ...prev, validation: 100 }));
-      
-      // Validate and parse initial purchase amount
-      let initialPurchaseWei: bigint;
-      try {
-        const purchaseAmount = initialPurchase?.trim() || '0';
-        if (purchaseAmount === '' || purchaseAmount === '0') {
-          initialPurchaseWei = BigInt(0);
-        } else {
-          initialPurchaseWei = parseEther(purchaseAmount);
-        }
-      } catch (error) {
-        console.error('Error parsing initial purchase amount:', error);
-        initialPurchaseWei = BigInt(0);
-      }
-      
+
+      // Create the coin data - use the exact same approach as songcast repo
       const coinData: CoinData = {
         name,
         symbol: symbol.toUpperCase(),
-        uri: `ipfs://${metadataCid}`,
+        uri: metadataURI,
         payoutRecipient: address,
         platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627",
-        initialPurchaseWei
+        initialPurchaseWei: parseEther(initialPurchase || '0')
       };
 
+      console.log('Creating coin with data:', coinData);
       await createMusicCoin(coinData);
       setCurrentStep('Coin created successfully!');
 
     } catch (err) {
       console.error('❌ Coin creation error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create music coin';
+      
+      // Provide more helpful error messages (copied from songcast repo)
+      let errorMessage = 'Failed to create music coin';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('Metadata fetch failed')) {
+          errorMessage = 'Failed to validate metadata. Please try again with a different audio or image file.';
+        } else if (err.message.includes('rejected')) {
+          errorMessage = 'Transaction was rejected by your wallet.';
+        } else if (err.message.includes('user denied') || err.message.includes('user rejected')) {
+          errorMessage = 'Transaction was cancelled by the user.';
+        } else if (err.message.includes('cannot estimate gas')) {
+          errorMessage = 'Failed to estimate gas. The blockchain network may be congested.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       setError(errorMessage);
     } finally {
       setIsUploading(false);

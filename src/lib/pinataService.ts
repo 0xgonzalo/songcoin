@@ -45,6 +45,7 @@ export function getIpfsUrl(ipfsHashOrUri: string): string {
 
 /**
  * Upload a file to IPFS via Pinata using JWT authentication
+ * Returns the IPFS hash/CID directly (without ipfs:// prefix)
  */
 export async function uploadFileToIPFS(file: File, onProgress?: (progress: number) => void): Promise<string> {
   const formData = new FormData();
@@ -115,7 +116,7 @@ export async function uploadJSONToIPFS(metadata: Record<string, unknown>): Promi
     // Safely extract attributes data with proper typing
     const attributes = Array.isArray(metadata.attributes) ? metadata.attributes : [];
     const findAttribute = (traitType: string) => {
-      return (attributes as AttributeItem[]).find(attr => attr && attr.trait_type === traitType)?.value || 'Unknown';
+      return attributes.find((attr: AttributeItem) => attr && typeof attr === 'object' && attr.trait_type === traitType)?.value || 'Unknown';
     };
     
     const requestBody = {
@@ -150,7 +151,8 @@ export async function uploadJSONToIPFS(metadata: Record<string, unknown>): Promi
     );
 
     console.log('✅ JSON metadata uploaded successfully:', response.data);
-    return response.data.IpfsHash;
+    // Return as ipfs:// URI like songcast repo expects
+    return `ipfs://${response.data.IpfsHash}`;
   } catch (error) {
     console.error('❌ Metadata upload error details:', error);
     if (axios.isAxiosError(error)) {
