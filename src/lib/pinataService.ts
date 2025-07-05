@@ -18,6 +18,11 @@ if (!PINATA_JWT.startsWith('eyJ')) {
 
 const PINATA_BASE_URL = 'https://api.pinata.cloud';
 
+interface AttributeItem {
+  trait_type: string;
+  value: string;
+}
+
 interface PinataResponse {
   IpfsHash: string;
   PinSize: number;
@@ -110,7 +115,7 @@ export async function uploadJSONToIPFS(metadata: Record<string, unknown>): Promi
     // Safely extract attributes data with proper typing
     const attributes = Array.isArray(metadata.attributes) ? metadata.attributes : [];
     const findAttribute = (traitType: string) => {
-      return attributes.find((attr: any) => attr && typeof attr === 'object' && attr.trait_type === traitType)?.value || 'Unknown';
+      return (attributes as AttributeItem[]).find(attr => attr && attr.trait_type === traitType)?.value || 'Unknown';
     };
     
     const requestBody = {
