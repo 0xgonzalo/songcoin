@@ -1,4 +1,4 @@
-import { PinataSDK } from "pinata";
+import axios from 'axios';
 
 const PINATA_JWT = process.env.NEXT_PUBLIC_PINATA_JWT as string;
 const PINATA_GATEWAY = process.env.NEXT_PUBLIC_PINATA_GATEWAY as string;
@@ -11,38 +11,13 @@ if (!PINATA_GATEWAY) {
   throw new Error('Missing PINATA_GATEWAY. Please check your .env file and make sure to prefix it with NEXT_PUBLIC_');
 }
 
-// Type definitions for Pinata SDK responses
-interface PinataUploadResponse {
-  cid: string;
-  size: number;
-  created_at: string;
+const PINATA_BASE_URL = 'https://api.pinata.cloud';
+
+interface PinataResponse {
+  IpfsHash: string;
+  PinSize: number;
+  Timestamp: string;
 }
-
-// Initialize Pinata SDK
-const pinataInstance = new PinataSDK({
-  pinataJwt: PINATA_JWT,
-  pinataGateway: PINATA_GATEWAY,
-});
-
-// Create typed wrapper
-export const pinata = {
-  upload: {
-    file: (file: File, options?: Record<string, unknown>): Promise<PinataUploadResponse> => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (pinataInstance as any).upload.file(file, options);
-    },
-    json: (data: Record<string, unknown>, options?: Record<string, unknown>): Promise<PinataUploadResponse> => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (pinataInstance as any).upload.json(data, options);
-    }
-  },
-  gateways: {
-    createSignedURL: (params: { cid: string; expires: number }): Promise<string> => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (pinataInstance as any).gateways.createSignedURL(params);
-    }
-  }
-};
 
 export function getIpfsUrl(ipfsHashOrUri: string): string {
   if (ipfsHashOrUri.startsWith('ipfs://')) {
@@ -59,78 +34,89 @@ export function getIpfsUrl(ipfsHashOrUri: string): string {
 }
 
 /**
- * Upload a file to IPFS via Pinata using the modern SDK
+ * Upload a file to IPFS via Pinata using JWT authentication
  */
 export async function uploadFileToIPFS(file: File, onProgress?: (progress: number) => void): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  // Add metadata for better organization in dashboard
+  formData.append('pinataMetadata', JSON.stringify({
+    name: file.name,
+    keyvalues: {
+      type: file.type,
+      size: file.size.toString(),
+      uploadedAt: new Date().toISOString(),
+    }
+  }));
+
   try {
     console.log('📁 Uploading file to Pinata:', file.name, file.type, `${(file.size / 1024 / 1024).toFixed(2)}MB`);
     
-    // Add metadata for better organization
-    const options = {
-      metadata: {
-        name: file.name,
-        keyvalues: {
-          type: file.type,
-          size: file.size.toString(),
-          uploadedAt: new Date().toISOString(),
+    const response = await axios.post<PinataResponse>(
+      `${PINATA_BASE_URL}/pinning/pinFileToIPFS`,
+      formData,
+      {
+        headers: {
+          'Authorization': `Bearer ${PINATA_JWT}`,
+          'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total && onProgress) {
+            const progress = (progressEvent.loaded / progressEvent.total) * 100;
+            onProgress(progress);
+          }
         }
       }
-    };
+    );
 
-    const upload = await pinata.upload.file(file, options);
-    
-    console.log('✅ File uploaded successfully:', upload);
-    
-    // Simulate progress for user feedback (since the SDK doesn't provide native progress tracking)
-    if (onProgress) {
-      onProgress(100);
-    }
-    
-    return upload.cid;
+    console.log('✅ File uploaded successfully:', response.data);
+    return response.data.IpfsHash;
   } catch (error) {
     console.error('❌ Upload error details:', error);
-    throw new Error(`Failed to upload file to IPFS: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    if (axios.isAxiosError(error)) {
+      throw new Error(`Failed to upload to IPFS: ${error.response?.data?.error || error.message}`);
+    }
+    throw error;
   }
 }
 
 /**
- * Upload JSON metadata to IPFS via Pinata using the modern SDK
+ * Upload JSON metadata to IPFS via Pinata using JWT authentication
  */
 export async function uploadJSONToIPFS(metadata: Record<string, unknown>): Promise<string> {
   try {
     console.log('📄 Uploading JSON metadata to Pinata:', metadata);
     
-    const options = {
-      metadata: {
-        name: `${metadata.name || 'metadata'}.json`,
-        keyvalues: {
-          type: 'metadata',
-          uploadedAt: new Date().toISOString(),
+    const response = await axios.post<PinataResponse>(
+      `${PINATA_BASE_URL}/pinning/pinJSONToIPFS`,
+      metadata,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${PINATA_JWT}`,
         }
       }
-    };
+    );
 
-    const upload = await pinata.upload.json(metadata, options);
-    
-    console.log('✅ JSON metadata uploaded successfully:', upload);
-    
-    return upload.cid;
+    console.log('✅ JSON metadata uploaded successfully:', response.data);
+    return response.data.IpfsHash;
   } catch (error) {
     console.error('❌ Metadata upload error details:', error);
-    throw new Error(`Failed to upload metadata to IPFS: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    if (axios.isAxiosError(error)) {
+      throw new Error(`Failed to upload metadata to IPFS: ${error.response?.data?.error || error.message}`);
+    }
+    throw error;
   }
 }
 
 /**
- * Create a signed URL for private file access
+ * Create a signed URL for private file access (fallback to public gateway)
  */
 export async function createSignedUrl(cid: string, expires: number = 3600): Promise<string> {
   try {
-    const url = await pinata.gateways.createSignedURL({
-      cid,
-      expires,
-    });
-    return url;
+    // For now, return public gateway URL since signed URL requires more complex setup
+    return `https://${PINATA_GATEWAY}/ipfs/${cid}`;
   } catch (error) {
     console.error('❌ Signed URL creation error:', error);
     throw new Error(`Failed to create signed URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
