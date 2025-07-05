@@ -177,13 +177,28 @@ export default function CreatePage() {
 
       // Step 4: Create coin
       setCurrentStep('Creating coin on blockchain...');
+      
+      // Validate and parse initial purchase amount
+      let initialPurchaseWei: bigint;
+      try {
+        const purchaseAmount = initialPurchase?.trim() || '0';
+        if (purchaseAmount === '' || purchaseAmount === '0') {
+          initialPurchaseWei = BigInt(0);
+        } else {
+          initialPurchaseWei = parseEther(purchaseAmount);
+        }
+      } catch (error) {
+        console.error('Error parsing initial purchase amount:', error);
+        initialPurchaseWei = BigInt(0);
+      }
+      
       const coinData: CoinData = {
         name,
         symbol: symbol.toUpperCase(),
         uri: `ipfs://${metadataCid}`,
         payoutRecipient: address,
         platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627",
-        initialPurchaseWei: parseEther(initialPurchase)
+        initialPurchaseWei
       };
 
       await createMusicCoin(coinData);

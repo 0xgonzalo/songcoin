@@ -11,6 +11,11 @@ if (!PINATA_GATEWAY) {
   throw new Error('Missing PINATA_GATEWAY. Please check your .env file and make sure to prefix it with NEXT_PUBLIC_');
 }
 
+// Validate JWT token format
+if (!PINATA_JWT.startsWith('eyJ')) {
+  console.warn('⚠️  PINATA_JWT does not appear to be a valid JWT token. Make sure you are using a JWT token from Pinata, not an API key.');
+}
+
 const PINATA_BASE_URL = 'https://api.pinata.cloud';
 
 interface PinataResponse {
@@ -40,14 +45,26 @@ export async function uploadFileToIPFS(file: File, onProgress?: (progress: numbe
   const formData = new FormData();
   formData.append('file', file);
   
-  // Add metadata for better organization in dashboard
-  formData.append('pinataMetadata', JSON.stringify({
+  // Add comprehensive metadata for better organization in dashboard
+  const metadata = {
     name: file.name,
     keyvalues: {
-      type: file.type,
-      size: file.size.toString(),
+      originalName: file.name,
+      mimeType: file.type,
+      fileSize: file.size.toString(),
+      fileSizeMB: (file.size / 1024 / 1024).toFixed(2),
       uploadedAt: new Date().toISOString(),
+      category: file.type.startsWith('image/') ? 'coverArt' : 'audioFile',
+      source: 'songcoin-app'
     }
+  };
+  
+  formData.append('pinataMetadata', JSON.stringify(metadata));
+  
+  // Add pinataOptions for better organization
+  formData.append('pinataOptions', JSON.stringify({
+    cidVersion: 1,
+    wrapWithDirectory: false
   }));
 
   try {
@@ -75,7 +92,9 @@ export async function uploadFileToIPFS(file: File, onProgress?: (progress: numbe
   } catch (error) {
     console.error('❌ Upload error details:', error);
     if (axios.isAxiosError(error)) {
-      throw new Error(`Failed to upload to IPFS: ${error.response?.data?.error || error.message}`);
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message;
+      console.error('❌ Full error response:', error.response?.data);
+      throw new Error(`Failed to upload to IPFS: ${errorMsg}`);
     }
     throw error;
   }
@@ -88,9 +107,35 @@ export async function uploadJSONToIPFS(metadata: Record<string, unknown>): Promi
   try {
     console.log('📄 Uploading JSON metadata to Pinata:', metadata);
     
+    // Safely extract attributes data with proper typing
+    const attributes = Array.isArray(metadata.attributes) ? metadata.attributes : [];
+    const findAttribute = (traitType: string) => {
+      return attributes.find((attr: any) => attr && typeof attr === 'object' && attr.trait_type === traitType)?.value || 'Unknown';
+    };
+    
+    const requestBody = {
+      pinataContent: metadata,
+      pinataMetadata: {
+        name: `${metadata.name || 'Music'}-metadata.json`,
+        keyvalues: {
+          type: 'metadata',
+          contentType: 'application/json',
+          musicName: metadata.name as string,
+          artist: findAttribute('Artist'),
+          genre: findAttribute('Genre'),
+          uploadedAt: new Date().toISOString(),
+          source: 'songcoin-app'
+        }
+      },
+      pinataOptions: {
+        cidVersion: 1,
+        wrapWithDirectory: false
+      }
+    };
+    
     const response = await axios.post<PinataResponse>(
       `${PINATA_BASE_URL}/pinning/pinJSONToIPFS`,
-      metadata,
+      requestBody,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -104,7 +149,9 @@ export async function uploadJSONToIPFS(metadata: Record<string, unknown>): Promi
   } catch (error) {
     console.error('❌ Metadata upload error details:', error);
     if (axios.isAxiosError(error)) {
-      throw new Error(`Failed to upload metadata to IPFS: ${error.response?.data?.error || error.message}`);
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message;
+      console.error('❌ Full error response:', error.response?.data);
+      throw new Error(`Failed to upload metadata to IPFS: ${errorMsg}`);
     }
     throw error;
   }
