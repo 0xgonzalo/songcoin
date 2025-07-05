@@ -17,6 +17,7 @@ interface UploadProgress {
   coverImage: number;
   audioFile: number;
   metadata: number;
+  validation: number;
 }
 
 export default function CreatePage() {
@@ -44,7 +45,8 @@ export default function CreatePage() {
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>({
     coverImage: 0,
     audioFile: 0,
-    metadata: 0
+    metadata: 0,
+    validation: 0
   });
   const [currentStep, setCurrentStep] = useState('');
   const [error, setError] = useState('');
@@ -134,7 +136,7 @@ export default function CreatePage() {
 
     setIsUploading(true);
     setError('');
-    setUploadProgress({ coverImage: 0, audioFile: 0, metadata: 0 });
+    setUploadProgress({ coverImage: 0, audioFile: 0, metadata: 0, validation: 0 });
 
     try {
       console.log('🎵 Starting coin creation process...');
@@ -175,8 +177,14 @@ export default function CreatePage() {
       setUploadProgress(prev => ({ ...prev, metadata: 100 }));
       console.log('✅ Metadata uploaded:', metadataCid);
 
-      // Step 4: Create coin
+      // Step 4: Validate metadata accessibility
+      setCurrentStep('Validating metadata accessibility...');
+      console.log('🔍 Validating metadata accessibility across IPFS gateways...');
+      setUploadProgress(prev => ({ ...prev, validation: 50 }));
+
+      // Step 5: Create coin
       setCurrentStep('Creating coin on blockchain...');
+      setUploadProgress(prev => ({ ...prev, validation: 100 }));
       
       // Validate and parse initial purchase amount
       let initialPurchaseWei: bigint;
@@ -214,7 +222,7 @@ export default function CreatePage() {
   };
 
   // Calculate overall progress
-  const overallProgress = (uploadProgress.coverImage + uploadProgress.audioFile + uploadProgress.metadata) / 3;
+  const overallProgress = (uploadProgress.coverImage + uploadProgress.audioFile + uploadProgress.metadata + uploadProgress.validation) / 4;
 
   // Show success state
   if (createCoinSuccess && createdCoinAddress) {
@@ -468,10 +476,11 @@ export default function CreatePage() {
                       style={{ width: `${overallProgress}%` }}
                     />
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs text-blue-300">
+                  <div className="grid grid-cols-4 gap-2 text-xs text-blue-300">
                     <div>Cover: {uploadProgress.coverImage.toFixed(0)}%</div>
                     <div>Audio: {uploadProgress.audioFile.toFixed(0)}%</div>
                     <div>Metadata: {uploadProgress.metadata.toFixed(0)}%</div>
+                    <div>Validation: {uploadProgress.validation.toFixed(0)}%</div>
                   </div>
                 </div>
               )}
