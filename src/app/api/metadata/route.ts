@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
             }
           });
         }
-      } catch (error) {
+      } catch {
         console.log(`Proxy gateway ${gateway} failed`);
         // Continue to the next gateway
       }
