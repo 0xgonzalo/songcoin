@@ -141,6 +141,7 @@ export default function CreatePage() {
       
       // Step 1: Upload cover image
       setCurrentStep('Uploading cover image...');
+      setUploadProgress(prev => ({ ...prev, coverImage: 50 }));
       const coverImageCid = await uploadFileToIPFS(coverImage, (progress) => {
         setUploadProgress(prev => ({ ...prev, coverImage: progress }));
       });
@@ -148,6 +149,7 @@ export default function CreatePage() {
       
       // Step 2: Upload audio file
       setCurrentStep('Uploading audio file...');
+      setUploadProgress(prev => ({ ...prev, audioFile: 50 }));
       const audioFileCid = await uploadFileToIPFS(audioFile, (progress) => {
         setUploadProgress(prev => ({ ...prev, audioFile: progress }));
       });
