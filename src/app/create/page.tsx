@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { useAccount } from 'wagmi';
 import { parseEther } from 'viem';
-import { Music, LogIn } from 'lucide-react';
+import { Music, LogIn, Upload, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useZoraCoins, CoinData } from '~/hooks/useZoraCoins';
 import { uploadFileToIPFS, uploadJSONToIPFS } from '~/lib/pinataService';
@@ -12,6 +12,12 @@ const MUSIC_GENRES = [
   "Rock", "Pop", "Hip Hop", "Electronic", "Jazz", "Classical", 
   "R&B", "Country", "Folk", "Metal", "Ambient", "Indie", "Other"
 ];
+
+interface UploadProgress {
+  coverImage: number;
+  audioFile: number;
+  metadata: number;
+}
 
 export default function CreatePage() {
   const { address, isConnected } = useAccount();
@@ -33,10 +39,14 @@ export default function CreatePage() {
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
   const [initialPurchase, setInitialPurchase] = useState('0.0001');
 
-  // Upload progress state
+  // Upload state
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStage, setUploadStage] = useState('');
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress>({
+    coverImage: 0,
+    audioFile: 0,
+    metadata: 0
+  });
+  const [currentStep, setCurrentStep] = useState('');
   const [error, setError] = useState('');
 
   // File input refs
@@ -48,9 +58,14 @@ export default function CreatePage() {
     if (file) {
       console.log(`Selected cover image: ${file.name}, Size: ${(file.size / (1024 * 1024)).toFixed(2)} MB`);
       
-      // Validate file type
+      // Validate file type and size
       if (!file.type.startsWith('image/')) {
         setError('Please select a valid image file');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Cover image must be less than 5MB');
         return;
       }
       
@@ -107,23 +122,27 @@ export default function CreatePage() {
 
     setIsUploading(true);
     setError('');
-    setUploadProgress(0);
+    setUploadProgress({ coverImage: 0, audioFile: 0, metadata: 0 });
 
     try {
       console.log('🎵 Starting coin creation process...');
       
-      // Stage 1: Upload files to IPFS
-      setUploadStage('Uploading files to IPFS...');
-      const [coverImageCid, audioFileCid] = await Promise.all([
-        uploadFileToIPFS(coverImage),
-        uploadFileToIPFS(audioFile)
-      ]);
+      // Step 1: Upload cover image
+      setCurrentStep('Uploading cover image...');
+      const coverImageCid = await uploadFileToIPFS(coverImage, (progress) => {
+        setUploadProgress(prev => ({ ...prev, coverImage: progress }));
+      });
+      console.log('✅ Cover image uploaded:', coverImageCid);
       
-      console.log('✅ Files uploaded:', { coverImageCid, audioFileCid });
-      setUploadProgress(50);
+      // Step 2: Upload audio file
+      setCurrentStep('Uploading audio file...');
+      const audioFileCid = await uploadFileToIPFS(audioFile, (progress) => {
+        setUploadProgress(prev => ({ ...prev, audioFile: progress }));
+      });
+      console.log('✅ Audio file uploaded:', audioFileCid);
 
-      // Stage 2: Upload metadata
-      setUploadStage('Uploading metadata...');
+      // Step 3: Create and upload metadata
+      setCurrentStep('Creating metadata...');
       const metadata = {
         name,
         description,
@@ -132,16 +151,18 @@ export default function CreatePage() {
         attributes: [
           { trait_type: 'Artist', value: artist },
           { trait_type: 'Genre', value: genre || 'Other' },
-          { trait_type: 'Type', value: 'Music' }
+          { trait_type: 'Type', value: 'Music' },
+          { trait_type: 'File Type', value: audioFile.type },
+          { trait_type: 'File Size', value: `${(audioFile.size / (1024 * 1024)).toFixed(2)} MB` }
         ]
       };
 
       const metadataCid = await uploadJSONToIPFS(metadata);
+      setUploadProgress(prev => ({ ...prev, metadata: 100 }));
       console.log('✅ Metadata uploaded:', metadataCid);
-      setUploadProgress(75);
 
-      // Stage 3: Create coin
-      setUploadStage('Creating coin...');
+      // Step 4: Create coin
+      setCurrentStep('Creating coin on blockchain...');
       const coinData: CoinData = {
         name,
         symbol: symbol.toUpperCase(),
@@ -152,8 +173,7 @@ export default function CreatePage() {
       };
 
       await createMusicCoin(coinData);
-      setUploadProgress(100);
-      setUploadStage('Coin created successfully!');
+      setCurrentStep('Coin created successfully!');
 
     } catch (err) {
       console.error('❌ Coin creation error:', err);
@@ -164,13 +184,16 @@ export default function CreatePage() {
     }
   };
 
+  // Calculate overall progress
+  const overallProgress = (uploadProgress.coverImage + uploadProgress.audioFile + uploadProgress.metadata) / 3;
+
   // Show success state
   if (createCoinSuccess && createdCoinAddress) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white/10 backdrop-blur-md rounded-2xl p-8 text-center">
           <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Music className="w-8 h-8 text-white" />
+            <CheckCircle className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-4">Coin Created Successfully!</h2>
           <p className="text-gray-300 mb-6">Your music coin has been created and is now live on the blockchain.</p>
@@ -295,13 +318,22 @@ export default function CreatePage() {
                     className="w-full h-48 bg-white/10 border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/20 transition-all"
                   >
                     {coverImagePreview ? (
-                      <Image
-                        src={coverImagePreview}
-                        alt="Cover preview"
-                        width={192}
-                        height={192}
-                        className="w-full h-full object-cover rounded-xl"
-                      />
+                      <div className="relative w-full h-full">
+                        <Image
+                          src={coverImagePreview}
+                          alt="Cover preview"
+                          fill
+                          className="object-cover rounded-xl"
+                        />
+                        {isUploading && uploadProgress.coverImage > 0 && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-xl">
+                            <div className="text-white text-center">
+                              <Upload className="w-8 h-8 mx-auto mb-2" />
+                              <p>{uploadProgress.coverImage.toFixed(0)}%</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <>
                         <Music className="w-12 h-12 text-gray-400 mb-2" />
@@ -323,9 +355,6 @@ export default function CreatePage() {
                 <div>
                   <label className="block text-white font-semibold mb-2">
                     Audio File * (Max 50MB)
-                    <span className="block text-sm text-gray-400 font-normal">
-                      Supported: MP3, WAV, OGG, FLAC, M4A, AAC
-                    </span>
                   </label>
                   <div
                     onClick={() => audioFileInputRef.current?.click()}
@@ -338,6 +367,19 @@ export default function CreatePage() {
                         <p className="text-gray-400 text-sm">
                           {(audioFile.size / (1024 * 1024)).toFixed(2)} MB
                         </p>
+                        {isUploading && uploadProgress.audioFile > 0 && (
+                          <div className="mt-2">
+                            <div className="w-full bg-white/20 rounded-full h-2">
+                              <div
+                                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${uploadProgress.audioFile}%` }}
+                              />
+                            </div>
+                            <p className="text-sm text-green-400 mt-1">
+                              {uploadProgress.audioFile.toFixed(0)}%
+                            </p>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <>
@@ -351,7 +393,7 @@ export default function CreatePage() {
                   <input
                     ref={audioFileInputRef}
                     type="file"
-                    accept="audio/*,audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/aac,audio/m4a,.mp3,.wav,.ogg,.aac,.m4a"
+                    accept="audio/*"
                     onChange={handleAudioFileChange}
                     className="hidden"
                   />
@@ -387,14 +429,18 @@ export default function CreatePage() {
               {/* Progress Display */}
               {isUploading && (
                 <div className="bg-blue-500/20 border border-blue-500/50 rounded-xl p-4">
-                  <p className="text-blue-200 mb-2">{uploadStage}</p>
-                  <div className="w-full bg-blue-900/50 rounded-full h-2">
+                  <p className="text-blue-200 mb-2">{currentStep}</p>
+                  <div className="w-full bg-blue-900/50 rounded-full h-2 mb-2">
                     <div
                       className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }}
+                      style={{ width: `${overallProgress}%` }}
                     />
                   </div>
-                  <p className="text-blue-300 text-sm mt-1">{uploadProgress.toFixed(0)}% complete</p>
+                  <div className="grid grid-cols-3 gap-2 text-xs text-blue-300">
+                    <div>Cover: {uploadProgress.coverImage.toFixed(0)}%</div>
+                    <div>Audio: {uploadProgress.audioFile.toFixed(0)}%</div>
+                    <div>Metadata: {uploadProgress.metadata.toFixed(0)}%</div>
+                  </div>
                 </div>
               )}
 
