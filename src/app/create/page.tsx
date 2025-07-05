@@ -86,10 +86,22 @@ export default function CreatePage() {
     setError('');
     
     if (file) {
-      console.log(`Selected audio file: ${file.name}, Size: ${(file.size / (1024 * 1024)).toFixed(2)} MB`);
+      console.log(`Selected audio file: ${file.name}, Size: ${(file.size / (1024 * 1024)).toFixed(2)} MB, Type: ${file.type}`);
       
-      if (!file.type.startsWith('audio/')) {
-        setError('Please select a valid audio file');
+      // Check both MIME type and file extension for better compatibility
+      const validAudioTypes = [
+        'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/aac', 
+        'audio/m4a', 'audio/flac', 'audio/x-wav', 'audio/x-m4a'
+      ];
+      
+      const validExtensions = ['.mp3', '.wav', '.ogg', '.aac', '.m4a', '.flac', '.wma'];
+      const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+      
+      const hasValidType = file.type.startsWith('audio/') || validAudioTypes.includes(file.type);
+      const hasValidExtension = validExtensions.includes(fileExtension);
+      
+      if (!hasValidType && !hasValidExtension) {
+        setError('Please select a valid audio file (MP3, WAV, OGG, AAC, M4A, FLAC)');
         return;
       }
       
@@ -355,6 +367,9 @@ export default function CreatePage() {
                 <div>
                   <label className="block text-white font-semibold mb-2">
                     Audio File * (Max 50MB)
+                    <span className="block text-sm text-gray-400 font-normal">
+                      Supported: MP3, WAV, OGG, AAC, M4A, FLAC
+                    </span>
                   </label>
                   <div
                     onClick={() => audioFileInputRef.current?.click()}
@@ -393,7 +408,7 @@ export default function CreatePage() {
                   <input
                     ref={audioFileInputRef}
                     type="file"
-                    accept="audio/*"
+                    accept="audio/*,.mp3,.wav,.ogg,.aac,.m4a,.flac,.wma"
                     onChange={handleAudioFileChange}
                     className="hidden"
                   />
