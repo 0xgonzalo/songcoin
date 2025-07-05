@@ -113,7 +113,7 @@ export async function uploadJSONToIPFS(metadata: Record<string, unknown>): Promi
 /**
  * Create a signed URL for private file access (fallback to public gateway)
  */
-export async function createSignedUrl(cid: string, expires: number = 3600): Promise<string> {
+export async function createSignedUrl(cid: string): Promise<string> {
   try {
     // For now, return public gateway URL since signed URL requires more complex setup
     return `https://${PINATA_GATEWAY}/ipfs/${cid}`;
