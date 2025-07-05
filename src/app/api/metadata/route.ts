@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
+// Interface for metadata structure
+interface MetadataItem {
+  name: string;
+  description: string;
+  image: string;
+  animation_url?: string;
+  attributes?: Array<{
+    trait_type: string;
+    value: string;
+  }>;
+}
+
 // Cache to store metadata by CID
-const metadataCache = new Map<string, any>();
+const metadataCache = new Map<string, MetadataItem>();
 
 /**
  * Extract CID from URL path or query parameter
@@ -79,8 +91,8 @@ export async function GET(request: NextRequest) {
     }
     
     throw new Error('Failed to fetch metadata from any gateway');
-  } catch (error) {
-    console.error('Error in metadata proxy:', error);
+  } catch {
+    console.error('Error in metadata proxy');
     return NextResponse.json(
       { error: 'Failed to fetch metadata' }, 
       { status: 500 }
