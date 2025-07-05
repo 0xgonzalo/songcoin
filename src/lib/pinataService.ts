@@ -11,11 +11,38 @@ if (!PINATA_GATEWAY) {
   throw new Error('Missing PINATA_GATEWAY. Please check your .env file and make sure to prefix it with NEXT_PUBLIC_');
 }
 
+// Type definitions for Pinata SDK responses
+interface PinataUploadResponse {
+  cid: string;
+  size: number;
+  created_at: string;
+}
+
 // Initialize Pinata SDK
-export const pinata = new PinataSDK({
+const pinataInstance = new PinataSDK({
   pinataJwt: PINATA_JWT,
   pinataGateway: PINATA_GATEWAY,
 });
+
+// Create typed wrapper
+export const pinata = {
+  upload: {
+    file: (file: File, options?: Record<string, unknown>): Promise<PinataUploadResponse> => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (pinataInstance as any).upload.file(file, options);
+    },
+    json: (data: Record<string, unknown>, options?: Record<string, unknown>): Promise<PinataUploadResponse> => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (pinataInstance as any).upload.json(data, options);
+    }
+  },
+  gateways: {
+    createSignedURL: (params: { cid: string; expires: number }): Promise<string> => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (pinataInstance as any).gateways.createSignedURL(params);
+    }
+  }
+};
 
 export function getIpfsUrl(ipfsHashOrUri: string): string {
   if (ipfsHashOrUri.startsWith('ipfs://')) {
@@ -50,7 +77,7 @@ export async function uploadFileToIPFS(file: File, onProgress?: (progress: numbe
       }
     };
 
-    const upload = await (pinata as any).upload.file(file, options);
+    const upload = await pinata.upload.file(file, options);
     
     console.log('✅ File uploaded successfully:', upload);
     
@@ -83,7 +110,7 @@ export async function uploadJSONToIPFS(metadata: Record<string, unknown>): Promi
       }
     };
 
-    const upload = await (pinata as any).upload.json(metadata, options);
+    const upload = await pinata.upload.json(metadata, options);
     
     console.log('✅ JSON metadata uploaded successfully:', upload);
     
@@ -99,7 +126,7 @@ export async function uploadJSONToIPFS(metadata: Record<string, unknown>): Promi
  */
 export async function createSignedUrl(cid: string, expires: number = 3600): Promise<string> {
   try {
-    const url = await (pinata as any).gateways.createSignedURL({
+    const url = await pinata.gateways.createSignedURL({
       cid,
       expires,
     });
