@@ -32,7 +32,6 @@ export default function MusicCoinCard({
   symbol,
   description,
   artistName,
-  artistAddress,
   coverArt,
   audioUrl,
   price = "$0.00",

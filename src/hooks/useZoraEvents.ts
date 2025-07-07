@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Address, createPublicClient, http, AbiEvent, Log, custom } from 'viem';
+import { useState, useEffect, useCallback } from 'react';
+import { Address, createPublicClient, AbiEvent, custom } from 'viem';
 import { base } from 'viem/chains';
 import { getIpfsUrl } from '~/lib/pinataService';
 import axios from 'axios';
@@ -29,6 +29,14 @@ const COIN_CREATED_EVENT: AbiEvent = {
   type: 'event'
 };
 
+interface TrackMetadata {
+  description?: string;
+  artist?: string;
+  image?: string;
+  animation_url?: string;
+  [key: string]: unknown;
+}
+
 export interface MusicCoin {
   coinAddress: Address;
   name: string;
@@ -38,7 +46,7 @@ export interface MusicCoin {
   artistAddress: Address;
   coverArt: string;
   audioUrl?: string;
-  metadata?: any;
+  metadata?: TrackMetadata;
 }
 
 // Custom transport that uses our API proxy
@@ -103,18 +111,17 @@ const KNOWN_COIN_BLOCKS = [
 
 // Add these constants at the top with other constants
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
-const PARALLEL_BATCHES = 3; // Number of parallel batches to process
 
 // Add this interface before the useZoraEvents function
 interface CacheEntry {
-  data: any[];
+  data: MusicCoin[];
   timestamp: number;
 }
 
 // Add this before the useZoraEvents function
 const eventCache: Record<string, CacheEntry> = {};
 
-export async function fetchTrackMetadata(metadataURI: string): Promise<any> {
+export async function fetchTrackMetadata(metadataURI: string): Promise<TrackMetadata | null> {
   try {
     if (!metadataURI) {
       console.error('Empty URI provided to fetchTrackMetadata');
@@ -183,6 +190,7 @@ export function useZoraEvents() {
       
       // Calculate number of batches needed
       let currentBlock = START_BLOCK;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const allLogs: any[] = [];
       
       // Process in batches until we reach the latest block
@@ -276,13 +284,15 @@ export function useZoraEvents() {
   };
 
   // Function to process logs and create coin objects
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const processLogs = async (logs: any[]) => {
     setProgressMessage('Processing coin data...');
     
     const processedCoins: MusicCoin[] = [];
     
     for (let i = 0; i < logs.length; i++) {
-      const log = logs[i];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const log = logs[i] as any;
       const logIndex = i + 1;
       
       try {
@@ -304,17 +314,17 @@ export function useZoraEvents() {
         let audioUrl = '';
         
         if (metadata) {
-          description = metadata.description || '';
-          artistName = metadata.artist || 'Unknown Artist';
+          description = (metadata.description as string) || '';
+          artistName = (metadata.artist as string) || 'Unknown Artist';
           
           // Extract image and audio URLs
-          if (metadata.image) {
+          if (metadata.image && typeof metadata.image === 'string') {
             coverArt = metadata.image.startsWith('ipfs://') 
               ? getIpfsUrl(metadata.image) 
               : metadata.image;
           }
           
-          if (metadata.animation_url) {
+          if (metadata.animation_url && typeof metadata.animation_url === 'string') {
             audioUrl = metadata.animation_url.startsWith('ipfs://') 
               ? getIpfsUrl(metadata.animation_url) 
               : metadata.animation_url;
@@ -331,7 +341,7 @@ export function useZoraEvents() {
           artistAddress,
           coverArt,
           audioUrl,
-          metadata
+          metadata: metadata || undefined
         };
         
         processedCoins.push(coin);
@@ -346,7 +356,7 @@ export function useZoraEvents() {
   };
 
   // Main function to fetch coins
-  const fetchCoins = async () => {
+  const fetchCoins = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -394,7 +404,7 @@ export function useZoraEvents() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Refresh coins manually
   const refreshCoins = async () => {
@@ -406,7 +416,7 @@ export function useZoraEvents() {
   // Initial fetch
   useEffect(() => {
     fetchCoins();
-  }, []);
+  }, [fetchCoins]);
 
   // Retry mechanism
   useEffect(() => {
@@ -419,7 +429,7 @@ export function useZoraEvents() {
       
       return () => clearTimeout(timeout);
     }
-  }, [error, retryCount]);
+  }, [error, retryCount, fetchCoins]);
 
   return {
     coins,

@@ -427,21 +427,22 @@ export default function CreateMusicCoin() {
       
       setUploadProgress(100);
       
-    } catch (error: any) {
-      let errorMessage = `Failed to create coin: ${error.message}`;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      let userFriendlyMessage = `Failed to create coin: ${errorMessage}`;
       
       // Provide more helpful error messages
-      if (error.message.includes('Metadata fetch failed')) {
-        errorMessage = 'Failed to validate metadata. Please try again with a different audio or image file.';
-      } else if (error.message.includes('rejected')) {
-        errorMessage = 'Transaction was rejected by your wallet.';
-      } else if (error.message.includes('user denied') || error.message.includes('user rejected')) {
-        errorMessage = 'Transaction was cancelled by the user.';
-      } else if (error.message.includes('cannot estimate gas')) {
-        errorMessage = 'Failed to estimate gas. The blockchain network may be congested.';
+      if (errorMessage.includes('Metadata fetch failed')) {
+        userFriendlyMessage = 'Failed to validate metadata. Please try again with a different audio or image file.';
+      } else if (errorMessage.includes('rejected')) {
+        userFriendlyMessage = 'Transaction was rejected by your wallet.';
+      } else if (errorMessage.includes('user denied') || errorMessage.includes('user rejected')) {
+        userFriendlyMessage = 'Transaction was cancelled by the user.';
+      } else if (errorMessage.includes('cannot estimate gas')) {
+        userFriendlyMessage = 'Failed to estimate gas. The blockchain network may be congested.';
       }
       
-      setTxError(errorMessage);
+      setTxError(userFriendlyMessage);
       setIsUploading(false);
       setFormSubmitted(false);
     }
