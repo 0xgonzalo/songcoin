@@ -50,7 +50,7 @@ export interface CoinData {
   symbol: string;
   uri: string;
   payoutRecipient: Address;
-  platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627";
+  platformReferrer: "0x79166ff20D3C3276b42eCE079a50C30b603167a6";
   initialPurchaseWei?: bigint;
 }
 

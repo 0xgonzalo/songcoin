@@ -433,7 +433,7 @@ export default function CreateMusicCoin() {
         uri: metadataURI,
         payoutRecipient: formState.artist as Address,
         initialPurchaseWei: parseEther(formState.initialPurchaseWei || '0'),
-        platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627"
+        platformReferrer: "0x79166ff20D3C3276b42eCE079a50C30b603167a6"
       };
       
       // Create the coin
