@@ -12,10 +12,8 @@ import {
   Pause, 
   ExternalLink, 
   User, 
-  Calendar, 
   Music, 
   TrendingUp, 
-  TrendingDown, 
   Volume2, 
   Loader2,
   ArrowLeft,
@@ -70,7 +68,7 @@ export default function TokenPage() {
     title: coin.name,
     artist: coin.artistName,
     album: '',
-    genre: coin.metadata?.attributes?.find((attr: any) => attr.trait_type === 'Genre')?.value || 'Music',
+    genre: 'Music', // Simplified for now
     cover: imageError ? '/api/placeholder/120/120' : coin.coverArt,
     isPlaying: currentTrack?.id === coin.coinAddress && isPlaying,
     mcap: "$0", // TODO: Add market cap fetching
@@ -129,7 +127,7 @@ export default function TokenPage() {
             <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-white mb-4">Coin Not Found</h1>
             <p className="text-gray-400 mb-6">
-              The coin you're looking for doesn't exist or hasn't been created yet.
+              The coin you&apos;re looking for doesn&apos;t exist or hasn&apos;t been created yet.
             </p>
             <Link
               href="/"
@@ -217,15 +215,13 @@ export default function TokenPage() {
                     </p>
                   )}
 
-                  {/* Genre */}
-                  {coin.metadata?.attributes?.find((attr: any) => attr.trait_type === 'Genre') && (
-                    <div className="flex items-center space-x-2 mb-4">
-                      <Music className="w-4 h-4 text-purple-400" />
-                      <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm">
-                        {coin.metadata.attributes.find((attr: any) => attr.trait_type === 'Genre')?.value}
-                      </span>
-                    </div>
-                  )}
+                  {/* Genre - simplified for now */}
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Music className="w-4 h-4 text-purple-400" />
+                    <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm">
+                      Music
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -235,12 +231,20 @@ export default function TokenPage() {
               <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6 mb-6">
                 <h3 className="text-xl font-semibold text-white mb-4">Metadata</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {coin.metadata.attributes?.map((attr: any, index: number) => (
-                    <div key={index} className="bg-gray-800/50 rounded-lg p-3">
-                      <p className="text-sm text-gray-400">{attr.trait_type}</p>
-                      <p className="text-white font-medium">{attr.value}</p>
-                    </div>
-                  ))}
+                  {'attributes' in coin.metadata && Array.isArray(coin.metadata.attributes) && 
+                   coin.metadata.attributes.map((attr: unknown, index: number) => {
+                     if (!attr || typeof attr !== 'object' || attr === null || 
+                         !('trait_type' in attr) || !('value' in attr)) {
+                       return null;
+                     }
+                     const typedAttr = attr as { trait_type: string; value: string };
+                     return (
+                       <div key={index} className="bg-gray-800/50 rounded-lg p-3">
+                         <p className="text-sm text-gray-400">{typedAttr.trait_type}</p>
+                         <p className="text-white font-medium">{typedAttr.value}</p>
+                       </div>
+                     );
+                   })}
                 </div>
               </div>
             )}

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useZoraEvents } from '~/hooks/useZoraEvents';
 import MusicCoinCard from '~/components/MusicCoinCard';
@@ -30,32 +29,51 @@ export default function ProfilePage() {
   );
 
   // TODO: Add holdings data when we have trading functionality
-  const holdingCoins: any[] = [];
+  const holdingCoins: unknown[] = [];
 
   // Calculate stats
   const totalCreated = createdCoins.length;
   const totalHoldings = holdingCoins.length;
   const totalValue = "$0"; // TODO: Calculate actual value
 
-  const renderCoinCard = (coin: any, showHoldings = false) => (
-    <MusicCoinCard
-      key={coin.coinAddress}
-      coinAddress={coin.coinAddress}
-      name={coin.name}
-      symbol={coin.symbol}
-      description={coin.description}
-      artistName={coin.artistName}
-      artistAddress={coin.artistAddress}
-      coverArt={coin.coverArt}
-      audioUrl={coin.audioUrl}
-      price="$0.00" // TODO: Add price fetching
-      change24h="+0.0%" // TODO: Add price change fetching
-      volume24h="$0" // TODO: Add volume fetching
-      marketCap="$0" // TODO: Add market cap fetching
-      holdings={showHoldings ? coin.holdings : undefined}
-      showHoldings={showHoldings}
-    />
-  );
+  const renderCoinCard = (coin: unknown, showHoldings = false) => {
+    // Type guard for coin object
+    if (!coin || typeof coin !== 'object' || coin === null) {
+      return null;
+    }
+    
+    const typedCoin = coin as {
+      coinAddress: string;
+      name: string;
+      symbol: string;
+      description: string;
+      artistName: string;
+      artistAddress: string;
+      coverArt: string;
+      audioUrl?: string;
+      holdings?: string;
+    };
+    
+    return (
+      <MusicCoinCard
+        key={typedCoin.coinAddress}
+        coinAddress={typedCoin.coinAddress}
+        name={typedCoin.name}
+        symbol={typedCoin.symbol}
+        description={typedCoin.description}
+        artistName={typedCoin.artistName}
+        artistAddress={typedCoin.artistAddress}
+        coverArt={typedCoin.coverArt}
+        audioUrl={typedCoin.audioUrl}
+        price="$0.00" // TODO: Add price fetching
+        change24h="+0.0%" // TODO: Add price change fetching
+        volume24h="$0" // TODO: Add volume fetching
+        marketCap="$0" // TODO: Add market cap fetching
+        holdings={showHoldings ? typedCoin.holdings : undefined}
+        showHoldings={showHoldings}
+      />
+    );
+  };
 
   if (isLoading) {
     return (

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Extract attributes data with proper typing for better metadata
     const attributes = Array.isArray(jsonData.attributes) ? jsonData.attributes : [];
     const findAttribute = (traitType: string) => {
-      return attributes.find((attr: any) => attr && attr.trait_type === traitType)?.value || 'Unknown';
+      return attributes.find((attr: unknown) => attr && typeof attr === 'object' && attr !== null && 'trait_type' in attr && (attr as { trait_type: string }).trait_type === traitType)?.value || 'Unknown';
     };
     
     // Create the request body with metadata for better dashboard organization
@@ -81,15 +81,17 @@ export async function POST(request: NextRequest) {
       uri: `ipfs://${response.data.IpfsHash}`
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error uploading JSON to Pinata:', error);
     
     // If authentication error, provide more detailed message
-    if (error.response?.status === 401) {
+    if (error && typeof error === 'object' && 'response' in error && 
+        error.response && typeof error.response === 'object' && 'status' in error.response && 
+        error.response.status === 401) {
       return NextResponse.json(
         { 
           error: 'Authentication failed with Pinata. Please check your API keys in the server environment variables.',
-          details: error.message,
+          details: error instanceof Error ? error.message : 'Unknown error',
         },
         { status: 401 }
       );
@@ -98,10 +100,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Failed to upload metadata to IPFS',
-        details: error.message,
-        response: error.response?.data
+        details: error instanceof Error ? error.message : 'Unknown error',
+        response: error && typeof error === 'object' && 'response' in error ? 
+          (error.response && typeof error.response === 'object' && 'data' in error.response ? error.response.data : null) : null
       },
-      { status: error.response?.status || 500 }
+      { status: error && typeof error === 'object' && 'response' in error && 
+        error.response && typeof error.response === 'object' && 'status' in error.response && 
+        typeof error.response.status === 'number' ? error.response.status : 500 }
     );
   }
 } 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createPublicClient, http, Address, AbiEvent } from 'viem';
+import { createPublicClient, http, Address } from 'viem';
 import { base } from 'viem/chains';
 
 // Zora factory address on Base mainnet

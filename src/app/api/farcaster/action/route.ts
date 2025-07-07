@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const coinAddress = url.searchParams.get('coinAddress');
     
     // Extract user data from the Farcaster frame signature packet
-    const { untrustedData, trustedData } = body;
+    const { untrustedData } = body;
     
     console.log('Frame action received:', { 
       coinAddress,

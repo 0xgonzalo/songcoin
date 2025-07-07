@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useZoraEvents } from '~/hooks/useZoraEvents';
@@ -21,7 +21,13 @@ export default function HomePage() {
   // Filter coins based on selected genre and audio availability
   const filteredCoins = coins.filter(coin => {
     const genreMatch = selectedGenre === "All" || 
-      (coin.metadata?.attributes?.find((attr: any) => attr.trait_type === 'Genre')?.value === selectedGenre);
+      (coin.metadata && 'attributes' in coin.metadata && 
+       Array.isArray(coin.metadata.attributes) && 
+       coin.metadata.attributes.some((attr: unknown) => 
+         attr && typeof attr === 'object' && attr !== null && 
+         'trait_type' in attr && (attr as { trait_type: string }).trait_type === 'Genre' &&
+         'value' in attr && (attr as { value: string }).value === selectedGenre
+       ));
     const audioMatch = !showOnlyWithAudio || coin.audioUrl;
     return genreMatch && audioMatch;
   });

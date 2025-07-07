@@ -512,6 +512,12 @@ export default function CreateMusicCoin() {
                     <div className="bg-green-800/30 rounded-lg p-4 mb-4">
                       <p className="text-sm text-green-200 mb-2">Coin Address:</p>
                       <p className="font-mono text-green-100 break-all">{createdCoinAddress}</p>
+                      {metadataCID && (
+                        <>
+                          <p className="text-sm text-green-200 mb-2 mt-3">Metadata IPFS Hash:</p>
+                          <p className="font-mono text-green-100 break-all">{metadataCID}</p>
+                        </>
+                      )}
                     </div>
                   )}
                   <div className="flex gap-4">
