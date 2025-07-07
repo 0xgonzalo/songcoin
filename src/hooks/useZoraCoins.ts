@@ -12,13 +12,12 @@ async function prefetchMetadata(metadataURI: string): Promise<boolean> {
   // Extract CID from the ipfs:// URI
   const cid = metadataURI.replace('ipfs://', '');
   
-  // List of gateways to try (including the one Zora uses)
+  // List of gateways to try (CORS-friendly gateways only for client-side)
   const gateways = [
-    `https://ipfs.io/ipfs/${cid}`,
     `https://gateway.pinata.cloud/ipfs/${cid}`,
+    `https://ipfs.io/ipfs/${cid}`,
     `https://cloudflare-ipfs.com/ipfs/${cid}`,
-    `https://ipfs.filebase.io/ipfs/${cid}`,
-    `https://dweb.link/ipfs/${cid}`
+    `https://ipfs.filebase.io/ipfs/${cid}`
   ];
   
   console.log('Prefetching metadata from multiple gateways...');
@@ -98,7 +97,7 @@ export function useZoraCoins() {
         // Extract CID from IPFS URI
         const cid = coinData.uri.replace('ipfs://', '');
         
-        // Try server-side proxy
+        // Try server-side proxy (pass just the CID, not the full URI)
         try {
           const proxyResponse = await axios.get(`/api/metadata?cid=${cid}`);
           if (proxyResponse.status === 200) {

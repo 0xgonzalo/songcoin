@@ -21,15 +21,22 @@ const metadataCache = new Map<string, MetadataItem>();
  */
 function extractCidFromRequest(request: NextRequest): string | null {
   // First check query parameter
-  const cid = request.nextUrl.searchParams.get('cid');
-  if (cid) return cid;
+  let cid = request.nextUrl.searchParams.get('cid');
+  if (cid) {
+    // Remove ipfs:// prefix if present
+    cid = cid.replace('ipfs://', '');
+    return cid;
+  }
   
   // Then check path segments for Zora's pattern
   const pathParts = request.nextUrl.pathname.split('/');
   const ipfsIndex = pathParts.findIndex(part => part === 'ipfs');
   
   if (ipfsIndex >= 0 && ipfsIndex < pathParts.length - 1) {
-    return pathParts[ipfsIndex + 1];
+    let pathCid = pathParts[ipfsIndex + 1];
+    // Remove ipfs:// prefix if present in path
+    pathCid = pathCid.replace('ipfs://', '');
+    return pathCid;
   }
   
   return null;

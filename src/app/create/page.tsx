@@ -203,7 +203,7 @@ export default function CreatePage() {
       const coinData: CoinData = {
         name,
         symbol: symbol.toUpperCase(),
-        uri: `ipfs://${metadataCid}`,
+        uri: metadataCid, // metadataCid already includes the ipfs:// prefix
         payoutRecipient: address,
         platformReferrer: "0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627",
         initialPurchaseWei
