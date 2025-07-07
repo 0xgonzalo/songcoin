@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Play, Pause, TrendingUp, TrendingDown, ExternalLink, Volume2 } from 'lucide-react';
+import { Play, Pause, TrendingUp, ExternalLink, Volume2 } from 'lucide-react';
 import { useAudioPlayer } from './providers/AudioPlayerProvider';
 import { type Track } from '~/lib/tracks';
 
@@ -123,7 +123,7 @@ export default function MusicCoinCard({
         <div className="text-right">
           <p className="font-semibold text-white">{price}</p>
           <p className={`text-sm flex items-center ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
-            {isPositiveChange ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
+            <TrendingUp className={`w-3 h-3 mr-1 ${isPositiveChange ? '' : 'rotate-180'}`} />
             {change24h}
           </p>
         </div>

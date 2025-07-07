@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAccount, useConnect } from 'wagmi';
 import { Address, parseEther } from 'viem';
-import { Music, Upload, Trash2, Info, Clock, Disc, AudioLines, Coins, Play, Pause, FileText, ChevronDown, CheckSquare, LogIn } from 'lucide-react';
+import { Music, Upload, Info, Clock, Disc, AudioLines, Coins, Play, Pause, FileText, ChevronDown, CheckSquare, LogIn } from 'lucide-react';
 import { useZoraCoins, CoinData } from '~/hooks/useZoraCoins';
 import { uploadFileToIPFS, uploadJSONToIPFS } from '~/lib/pinataService';
 import Link from 'next/link';
@@ -50,7 +50,6 @@ export default function CreateMusicCoin() {
   const [imageCID, setImageCID] = useState<string | null>(null);
   const [metadataCID, setMetadataCID] = useState<string | null>(null);
   const [txPending, setTxPending] = useState(false);
-  const [txSuccess, setTxSuccess] = useState(false);
   const [txError, setTxError] = useState<string | null>(null);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [showGenreDropdown, setShowGenreDropdown] = useState(false);
@@ -97,7 +96,6 @@ export default function CreateMusicCoin() {
   // Track transaction status
   useEffect(() => {
     setTxPending(formSubmitted && isCreatingCoin);
-    setTxSuccess(createCoinSuccess);
     
     if (createCoinError) {
       setTxError(createCoinError.message);
@@ -117,7 +115,7 @@ export default function CreateMusicCoin() {
   }, [audioElement]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     
     setFormState(prev => ({
       ...prev,
@@ -317,8 +315,10 @@ export default function CreateMusicCoin() {
         });
         setAudioCID(audioCID);
         console.log('Audio uploaded with CID:', audioCID);
-      } catch (error: any) {
-        if (error.response?.status === 401) {
+      } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'response' in error && 
+            error.response && typeof error.response === 'object' && 'status' in error.response && 
+            error.response.status === 401) {
           setTxError('Pinata API authentication failed. Please ensure PINATA_API_KEY and PINATA_SECRET_KEY environment variables are set correctly.');
           setIsUploading(false);
           setFormSubmitted(false);
@@ -335,8 +335,10 @@ export default function CreateMusicCoin() {
         });
         setImageCID(imageCID);
         console.log('Image uploaded with CID:', imageCID);
-      } catch (error: any) {
-        if (error.response?.status === 401) {
+      } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'response' in error && 
+            error.response && typeof error.response === 'object' && 'status' in error.response && 
+            error.response.status === 401) {
           setTxError('Pinata API authentication failed. Please ensure PINATA_API_KEY and PINATA_SECRET_KEY environment variables are set correctly.');
           setIsUploading(false);
           setFormSubmitted(false);
