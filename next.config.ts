@@ -34,10 +34,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Configure experimental features for large file handling
-  experimental: {
-    serverComponentsExternalPackages: [],
-  },
+  // Configure external packages for server components
+  serverExternalPackages: [],
 };
 
 export default nextConfig;

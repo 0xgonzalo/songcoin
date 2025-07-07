@@ -44,9 +44,70 @@ export function getIpfsUrl(ipfsHashOrUri: string): string {
 }
 
 /**
- * Upload a file to IPFS via Pinata using JWT authentication
+ * Upload a file to IPFS via Pinata using server-side API endpoint
  */
 export async function uploadFileToIPFS(file: File, onProgress?: (progress: number) => void): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    console.log('📁 Uploading file to Pinata via API:', file.name, file.type, `${(file.size / 1024 / 1024).toFixed(2)}MB`);
+    
+    const response = await axios.post('/api/pinata/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const progress = (progressEvent.loaded / progressEvent.total) * 100;
+          onProgress(progress);
+        }
+      }
+    });
+
+    console.log('✅ File uploaded successfully:', response.data);
+    return response.data.IpfsHash;
+  } catch (error) {
+    console.error('❌ Upload error details:', error);
+    if (axios.isAxiosError(error)) {
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message;
+      console.error('❌ Full error response:', error.response?.data);
+      throw new Error(`Failed to upload to IPFS: ${errorMsg}`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Upload JSON metadata to IPFS via Pinata using server-side API endpoint
+ */
+export async function uploadJSONToIPFS(metadata: Record<string, unknown>): Promise<string> {
+  try {
+    console.log('📄 Uploading JSON metadata to Pinata via API:', metadata);
+    
+    const response = await axios.post('/api/pinata/json', metadata, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('✅ JSON metadata uploaded successfully:', response.data);
+    return response.data.uri; // Return the full ipfs:// URI
+  } catch (error) {
+    console.error('❌ Metadata upload error details:', error);
+    if (axios.isAxiosError(error)) {
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message;
+      console.error('❌ Full error response:', error.response?.data);
+      throw new Error(`Failed to upload metadata to IPFS: ${errorMsg}`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Upload a file to IPFS via Pinata using JWT authentication (direct to Pinata)
+ */
+export async function uploadFileToIPFSDirect(file: File, onProgress?: (progress: number) => void): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
   
@@ -106,9 +167,9 @@ export async function uploadFileToIPFS(file: File, onProgress?: (progress: numbe
 }
 
 /**
- * Upload JSON metadata to IPFS via Pinata using JWT authentication
+ * Upload JSON metadata to IPFS via Pinata using JWT authentication (direct to Pinata)
  */
-export async function uploadJSONToIPFS(metadata: Record<string, unknown>): Promise<string> {
+export async function uploadJSONToIPFSDirect(metadata: Record<string, unknown>): Promise<string> {
   try {
     console.log('📄 Uploading JSON metadata to Pinata:', metadata);
     
