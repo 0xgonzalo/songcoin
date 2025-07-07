@@ -110,7 +110,7 @@ FARCASTER_DEVELOPER_MNEMONIC=your_farcaster_developer_mnemonic_here
 The project uses these smart contracts on Base mainnet:
 
 - **Zora Factory**: `0x777777751622c0d3258f214F9DF38E35BF45baF3`
-- **Platform Referrer**: `0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627`
+- **Platform Referrer**: `0x79166ff20D3C3276b42eCE079a50C30b603167a6`
 
 These are already configured in the codebase.
 

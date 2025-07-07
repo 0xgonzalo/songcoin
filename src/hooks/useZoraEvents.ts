@@ -8,7 +8,7 @@ import axios from 'axios';
 const ZORA_FACTORY_ADDRESS = '0x777777751622c0d3258f214F9DF38E35BF45baF3' as Address;
 
 // Platform referrer address we're filtering for
-const PLATFORM_REFERRER = '0x32C8ACD3118766CBE5c3E45a44BCEDde953EF627' as Address;
+const PLATFORM_REFERRER = '0x79166ff20D3C3276b42eCE079a50C30b603167a6' as Address;
 
 // ABI for the CoinCreated event
 const COIN_CREATED_EVENT: AbiEvent = {
