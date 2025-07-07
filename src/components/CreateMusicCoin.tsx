@@ -152,14 +152,14 @@ export default function CreateMusicCoin() {
   const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check file size
+      // Check file size - more conservative limits for Vercel
       const fileSizeMB = file.size / (1024 * 1024);
       console.log(`Selected audio file size: ${fileSizeMB.toFixed(2)}MB`);
       
-      if (fileSizeMB > 50) {
+      if (fileSizeMB > 4) {
         setErrors(prev => ({
           ...prev,
-          audio: `File is too large (${fileSizeMB.toFixed(2)}MB). Maximum recommended size is 50MB.`
+          audio: `File is too large (${fileSizeMB.toFixed(2)}MB). Maximum size is 4MB to ensure reliable uploads.`
         }));
         return;
       }
@@ -191,14 +191,14 @@ export default function CreateMusicCoin() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check file size
+      // Check file size - more conservative limits for Vercel
       const fileSizeMB = file.size / (1024 * 1024);
       console.log(`Selected image file size: ${fileSizeMB.toFixed(2)}MB`);
       
-      if (fileSizeMB > 10) {
+      if (fileSizeMB > 2) {
         setErrors(prev => ({
           ...prev,
-          image: `Image is too large (${fileSizeMB.toFixed(2)}MB). Maximum recommended size is 10MB.`
+          image: `Image is too large (${fileSizeMB.toFixed(2)}MB). Maximum size is 2MB to ensure reliable uploads.`
         }));
         return;
       }
@@ -270,12 +270,24 @@ export default function CreateMusicCoin() {
       newErrors.genre = 'Genre is required';
     }
     
-    if (!audioFileRef.current?.files?.[0]) {
+    const audioFile = audioFileRef.current?.files?.[0];
+    if (!audioFile) {
       newErrors.audio = 'Audio file is required';
+    } else {
+      const audioSizeMB = audioFile.size / (1024 * 1024);
+      if (audioSizeMB > 4) {
+        newErrors.audio = `Audio file is too large (${audioSizeMB.toFixed(2)}MB). Maximum size is 4MB.`;
+      }
     }
     
-    if (!coverArtRef.current?.files?.[0]) {
+    const imageFile = coverArtRef.current?.files?.[0];
+    if (!imageFile) {
       newErrors.image = 'Cover art is required';
+    } else {
+      const imageSizeMB = imageFile.size / (1024 * 1024);
+      if (imageSizeMB > 2) {
+        newErrors.image = `Cover art is too large (${imageSizeMB.toFixed(2)}MB). Maximum size is 2MB.`;
+      }
     }
     
     setErrors(newErrors);
@@ -706,7 +718,7 @@ export default function CreateMusicCoin() {
                           <div className="space-y-2">
                             <Music className="mx-auto text-gray-400" size={48} />
                             <p className="text-gray-400">Click to upload audio file</p>
-                            <p className="text-gray-500 text-sm">MP3, WAV, or other audio formats</p>
+                            <p className="text-gray-500 text-sm">MP3, WAV, or other audio formats (Max 4MB)</p>
                           </div>
                         )}
                       </div>
@@ -744,7 +756,7 @@ export default function CreateMusicCoin() {
                           <div className="space-y-2">
                             <Disc className="mx-auto text-gray-400" size={48} />
                             <p className="text-gray-400">Click to upload cover art</p>
-                            <p className="text-gray-500 text-sm">JPG, PNG, or GIF (Max 10MB)</p>
+                            <p className="text-gray-500 text-sm">JPG, PNG, or GIF (Max 2MB)</p>
                           </div>
                         )}
                       </div>

@@ -1,7 +1,10 @@
 import { useState, useCallback } from 'react';
 import { 
   createCoin, 
-  createCoinCall
+  createCoinCall,
+  DeployCurrency,
+  InitialPurchaseCurrency,
+  ValidMetadataURI
 } from '@zoralabs/coins-sdk';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
 import { Address } from 'viem';
@@ -112,8 +115,26 @@ export function useZoraCoins() {
         }
       }
       
+      // Structure the coin parameters according to Zora SDK specification
+      const coinParams = {
+        name: coinData.name,
+        symbol: coinData.symbol,
+        uri: coinData.uri as ValidMetadataURI,
+        payoutRecipient: coinData.payoutRecipient,
+        platformReferrer: coinData.platformReferrer,
+        currency: DeployCurrency.ZORA, // Use ZORA as default currency
+        ...(coinData.initialPurchaseWei && coinData.initialPurchaseWei > 0n && {
+          initialPurchase: {
+            currency: InitialPurchaseCurrency.ETH,
+            amount: coinData.initialPurchaseWei
+          }
+        })
+      };
+      
+      console.log('Structured coin parameters:', coinParams);
+      
       // Create the coin using the SDK
-      const result = await createCoin(coinData as unknown as Parameters<typeof createCoin>[0], walletClient, publicClient);
+      const result = await createCoin(coinParams, walletClient, publicClient);
       
       if (result.address) {
         setCreatedCoinAddress(result.address);
@@ -146,7 +167,22 @@ export function useZoraCoins() {
    * Get create coin call params for use with wagmi hooks
    */
   const createCoinTransaction = useCallback((coinData: CoinData) => {
-    return createCoinCall(coinData as unknown as Parameters<typeof createCoinCall>[0]);
+    const coinParams = {
+      name: coinData.name,
+      symbol: coinData.symbol,
+      uri: coinData.uri as ValidMetadataURI,
+      payoutRecipient: coinData.payoutRecipient,
+      platformReferrer: coinData.platformReferrer,
+      currency: DeployCurrency.ZORA,
+      ...(coinData.initialPurchaseWei && coinData.initialPurchaseWei > 0n && {
+        initialPurchase: {
+          currency: InitialPurchaseCurrency.ETH,
+          amount: coinData.initialPurchaseWei
+        }
+      })
+    };
+    
+    return createCoinCall(coinParams);
   }, []);
 
   return {

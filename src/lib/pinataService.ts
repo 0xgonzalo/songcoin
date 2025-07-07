@@ -70,9 +70,24 @@ export async function uploadFileToIPFS(file: File, onProgress?: (progress: numbe
   } catch (error) {
     console.error('❌ Upload error details:', error);
     if (axios.isAxiosError(error)) {
-      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message;
-      console.error('❌ Full error response:', error.response?.data);
-      throw new Error(`Failed to upload to IPFS: ${errorMsg}`);
+      const status = error.response?.status;
+      const errorData = error.response?.data;
+      const errorMsg = errorData?.error || errorData?.message || error.message;
+      
+      console.error('❌ Full error response:', errorData);
+      
+      // Handle specific HTTP status codes with appropriate messages
+      if (status === 413) {
+        throw new Error(`File too large: ${errorMsg || 'The file exceeds the maximum upload size limit. Please use a smaller file (recommended: under 4MB).'}`);
+      } else if (status === 401) {
+        throw new Error(`Authentication error: ${errorMsg || 'Invalid API credentials. Please check your Pinata configuration.'}`);
+      } else if (status === 400) {
+        throw new Error(`Invalid request: ${errorMsg || 'The file format or request is invalid.'}`);
+      } else if (status === 500) {
+        throw new Error(`Server error: ${errorMsg || 'Pinata server encountered an error. Please try again.'}`);
+      } else {
+        throw new Error(`Upload failed: ${errorMsg || `HTTP ${status} error occurred.`}`);
+      }
     }
     throw error;
   }
