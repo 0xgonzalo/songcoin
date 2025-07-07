@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         error.response.status === 413) {
       return NextResponse.json(
         { 
-          error: 'File too large for upload. Please use a smaller file (recommended: under 10MB).',
+          error: 'File too large for upload. Please use a smaller file (Audio: max 4MB, Images: max 2MB).',
           details: error instanceof Error ? error.message : 'Unknown error',
         },
         { status: 413 }
