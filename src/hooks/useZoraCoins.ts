@@ -2,13 +2,10 @@ import { useState, useCallback } from 'react';
 import { 
   createCoin, 
   createCoinCall,
-  DeployCurrency,
-  InitialPurchaseCurrency,
   ValidMetadataURI
 } from '@zoralabs/coins-sdk';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
 import { Address } from 'viem';
-import { base } from 'viem/chains';
 import axios from 'axios';
 
 // Function to check if metadata is accessible via various gateways before creating the coin
@@ -49,7 +46,7 @@ async function prefetchMetadata(metadataURI: string): Promise<boolean> {
 export interface CoinData {
   name: string;
   symbol: string;
-  uri: string;
+  uri: ValidMetadataURI;
   payoutRecipient: Address;
   platformReferrer: Address;
   initialPurchaseWei?: bigint;
@@ -116,28 +113,8 @@ export function useZoraCoins() {
         }
       }
       
-      // Structure the coin parameters according to Zora SDK specification (matching songcast-base)
-      const coinParams = {
-        name: coinData.name,
-        symbol: coinData.symbol,
-        uri: coinData.uri as ValidMetadataURI,
-        payoutRecipient: coinData.payoutRecipient as Address,
-        platformReferrer: coinData.platformReferrer as Address,
-        chainId: base.id, // Base mainnet (8453)
-        currency: DeployCurrency.ZORA, // Use ZORA as default currency
-        owners: [coinData.payoutRecipient as Address], // Owner is the payout recipient
-        ...(coinData.initialPurchaseWei && coinData.initialPurchaseWei > 0n && {
-          initialPurchase: {
-            currency: InitialPurchaseCurrency.ETH,
-            amount: coinData.initialPurchaseWei
-          }
-        })
-      };
-      
-      console.log('Calling createCoin with params:', coinParams);
-      
-      // Create the coin using the SDK
-      const result = await createCoin(coinParams, walletClient, publicClient);
+      // Create the coin using the SDK - pass coinData directly like songcast-base
+      const result = await createCoin(coinData, walletClient, publicClient);
       
       if (result.address) {
         setCreatedCoinAddress(result.address);
@@ -170,24 +147,10 @@ export function useZoraCoins() {
    * Get create coin call params for use with wagmi hooks
    */
   const createCoinTransaction = useCallback((coinData: CoinData) => {
-    const coinParams = {
-      name: coinData.name,
-      symbol: coinData.symbol,
-      uri: coinData.uri as ValidMetadataURI,
-      payoutRecipient: coinData.payoutRecipient as Address,
-      platformReferrer: coinData.platformReferrer as Address,
-      chainId: base.id, // Base mainnet (8453)
-      currency: DeployCurrency.ZORA,
-      owners: [coinData.payoutRecipient as Address], // Owner is the payout recipient
-      ...(coinData.initialPurchaseWei && coinData.initialPurchaseWei > 0n && {
-        initialPurchase: {
-          currency: InitialPurchaseCurrency.ETH,
-          amount: coinData.initialPurchaseWei
-        }
-      })
-    };
-    
-    return createCoinCall(coinParams);
+    return createCoinCall({
+      ...coinData,
+      uri: coinData.uri as ValidMetadataURI
+    });
   }, []);
 
   return {

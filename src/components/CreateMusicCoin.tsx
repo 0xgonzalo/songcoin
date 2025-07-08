@@ -8,6 +8,7 @@ import { useZoraCoins, CoinData } from '~/hooks/useZoraCoins';
 import { uploadFileToIPFS, uploadJSONToIPFS } from '~/lib/pinataService';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ValidMetadataURI } from '@zoralabs/coins-sdk';
 
 // Music genres for the dropdown
 const MUSIC_GENRES = [
@@ -433,7 +434,7 @@ export default function CreateMusicCoin() {
       const coinData: CoinData = {
         name: formState.name,
         symbol: formState.symbol,
-        uri: metadataURI,
+        uri: metadataURI as ValidMetadataURI,
         payoutRecipient: formState.artist as Address,
         initialPurchaseWei: initialPurchaseAmount,
         platformReferrer: "0x79166ff20D3C3276b42eCE079a50C30b603167a6" as Address

@@ -7,6 +7,7 @@ import { Music, LogIn, Upload, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useZoraCoins, CoinData } from '~/hooks/useZoraCoins';
 import { uploadFileToIPFS, uploadJSONToIPFS } from '~/lib/pinataService';
+import { ValidMetadataURI } from '@zoralabs/coins-sdk';
 
 const MUSIC_GENRES = [
   "Rock", "Pop", "Hip Hop", "Electronic", "Jazz", "Classical", 
@@ -203,7 +204,7 @@ export default function CreatePage() {
       const coinData: CoinData = {
         name,
         symbol: symbol.toUpperCase(),
-        uri: metadataCid, // metadataCid already includes the ipfs:// prefix
+        uri: metadataCid as ValidMetadataURI, // metadataCid already includes the ipfs:// prefix
         payoutRecipient: address,
         platformReferrer: "0x79166ff20D3C3276b42eCE079a50C30b603167a6" as Address,
         initialPurchaseWei
