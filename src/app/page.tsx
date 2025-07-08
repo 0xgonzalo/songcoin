@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useZoraEvents } from '~/hooks/useZoraEvents';
@@ -8,7 +8,7 @@ import { useAudioPlayer } from '~/components/providers/AudioPlayerProvider';
 import MusicCoinCard from '~/components/MusicCoinCard';
 import { featuredTracks } from '~/lib/tracks';
 import { Loader2, Music, TrendingUp, Users, Coins } from 'lucide-react';
-import { useMiniApp } from '@neynar/react';
+
 
 // Genre filter options
 const genres = ["All", "Electronic", "Hip Hop", "Rock", "Pop", "Ambient", "Other"];
@@ -16,16 +16,8 @@ const genres = ["All", "Electronic", "Hip Hop", "Rock", "Pop", "Ambient", "Other
 export default function HomePage() {
   const { coins, loading, error, progressMessage, refreshCoins } = useZoraEvents();
   const { currentTrack, isPlaying, toggle } = useAudioPlayer();
-  const { isSDKLoaded, context } = useMiniApp();
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [showOnlyWithAudio, setShowOnlyWithAudio] = useState(false);
-
-  // Initialize MiniKit when SDK is loaded
-  useEffect(() => {
-    if (isSDKLoaded && context) {
-      console.log('MiniApp context loaded:', context);
-    }
-  }, [isSDKLoaded, context]);
 
   // Filter coins based on selected genre and audio availability
   const filteredCoins = coins.filter(coin => {
