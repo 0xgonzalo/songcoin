@@ -427,13 +427,16 @@ export default function CreateMusicCoin() {
       
       // Create the coin data
       setUploadStage('creating_coin');
+      const initialPurchaseAmount = parseEther(formState.initialPurchaseWei || '0');
+      console.log('Initial purchase amount:', formState.initialPurchaseWei, 'parsed to:', initialPurchaseAmount.toString());
+      
       const coinData: CoinData = {
         name: formState.name,
         symbol: formState.symbol,
         uri: metadataURI,
         payoutRecipient: formState.artist as Address,
-        initialPurchaseWei: parseEther(formState.initialPurchaseWei || '0'),
-        platformReferrer: "0x79166ff20D3C3276b42eCE079a50C30b603167a6"
+        initialPurchaseWei: initialPurchaseAmount,
+        platformReferrer: "0x79166ff20D3C3276b42eCE079a50C30b603167a6" as Address
       };
       
       // Create the coin
