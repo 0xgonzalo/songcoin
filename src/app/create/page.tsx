@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { useAccount } from 'wagmi';
-import { parseEther } from 'viem';
+import { parseEther, Address } from 'viem';
 import { Music, LogIn, Upload, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useZoraCoins, CoinData } from '~/hooks/useZoraCoins';
@@ -205,7 +205,7 @@ export default function CreatePage() {
         symbol: symbol.toUpperCase(),
         uri: metadataCid, // metadataCid already includes the ipfs:// prefix
         payoutRecipient: address,
-        platformReferrer: "0x79166ff20D3C3276b42eCE079a50C30b603167a6",
+        platformReferrer: "0x79166ff20D3C3276b42eCE079a50C30b603167a6" as Address,
         initialPurchaseWei
       };
 

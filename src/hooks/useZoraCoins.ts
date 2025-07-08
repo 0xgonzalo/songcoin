@@ -50,7 +50,7 @@ export interface CoinData {
   symbol: string;
   uri: string;
   payoutRecipient: Address;
-  platformReferrer: "0x79166ff20D3C3276b42eCE079a50C30b603167a6";
+  platformReferrer: Address;
   initialPurchaseWei?: bigint;
 }
 
@@ -116,20 +116,33 @@ export function useZoraCoins() {
       }
       
       // Structure the coin parameters according to Zora SDK specification
-      const coinParams = {
+      const coinParams: {
+        name: string;
+        symbol: string;
+        uri: ValidMetadataURI;
+        payoutRecipient: Address;
+        platformReferrer: Address;
+        currency: DeployCurrency;
+        initialPurchase?: {
+          currency: InitialPurchaseCurrency;
+          amount: bigint;
+        };
+      } = {
         name: coinData.name,
         symbol: coinData.symbol,
         uri: coinData.uri as ValidMetadataURI,
-        payoutRecipient: coinData.payoutRecipient,
-        platformReferrer: coinData.platformReferrer,
+        payoutRecipient: coinData.payoutRecipient as Address,
+        platformReferrer: coinData.platformReferrer as Address,
         currency: DeployCurrency.ZORA, // Use ZORA as default currency
-        ...(coinData.initialPurchaseWei && coinData.initialPurchaseWei > 0n && {
-          initialPurchase: {
-            currency: InitialPurchaseCurrency.ETH,
-            amount: coinData.initialPurchaseWei
-          }
-        })
       };
+      
+      // Only add initialPurchase if the amount is greater than 0
+      if (coinData.initialPurchaseWei && coinData.initialPurchaseWei > 0n) {
+        coinParams.initialPurchase = {
+          currency: InitialPurchaseCurrency.ETH,
+          amount: coinData.initialPurchaseWei
+        };
+      }
       
       console.log('Structured coin parameters:', coinParams);
       
@@ -167,20 +180,33 @@ export function useZoraCoins() {
    * Get create coin call params for use with wagmi hooks
    */
   const createCoinTransaction = useCallback((coinData: CoinData) => {
-    const coinParams = {
+    const coinParams: {
+      name: string;
+      symbol: string;
+      uri: ValidMetadataURI;
+      payoutRecipient: Address;
+      platformReferrer: Address;
+      currency: DeployCurrency;
+      initialPurchase?: {
+        currency: InitialPurchaseCurrency;
+        amount: bigint;
+      };
+    } = {
       name: coinData.name,
       symbol: coinData.symbol,
       uri: coinData.uri as ValidMetadataURI,
-      payoutRecipient: coinData.payoutRecipient,
-      platformReferrer: coinData.platformReferrer,
+      payoutRecipient: coinData.payoutRecipient as Address,
+      platformReferrer: coinData.platformReferrer as Address,
       currency: DeployCurrency.ZORA,
-      ...(coinData.initialPurchaseWei && coinData.initialPurchaseWei > 0n && {
-        initialPurchase: {
-          currency: InitialPurchaseCurrency.ETH,
-          amount: coinData.initialPurchaseWei
-        }
-      })
     };
+    
+    // Only add initialPurchase if the amount is greater than 0
+    if (coinData.initialPurchaseWei && coinData.initialPurchaseWei > 0n) {
+      coinParams.initialPurchase = {
+        currency: InitialPurchaseCurrency.ETH,
+        amount: coinData.initialPurchaseWei
+      };
+    }
     
     return createCoinCall(coinParams);
   }, []);
