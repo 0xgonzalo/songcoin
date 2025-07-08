@@ -14,9 +14,11 @@ import {
 
 export async function GET() {
   const manifest = {
-    accountAssociation: {
-      header: `farcaster:verify:${APP_URL?.replace('https://', '').replace('http://', '')}`
-    },
+      "accountAssociation": {
+        "header": "eyJmaWQiOjM1NTU4OCwidHlwZSI6ImF1dGgiLCJrZXkiOiIweEI2QTUwRGI1MkY3MDNkYkIwMDlGMDNGNkViN2Y1NThmMTEwQzliMEQifQ",
+        "payload": "eyJkb21haW4iOiJzb25nY29pbi52ZXJjZWwuYXBwIn0",
+        "signature": "N6bJKK/q3vTMo5Sm2lYEcT3O3A3sz/gdXpqoa2C/UC0ZLgbXmDj8e7GQLrmgIk+2RQ1H+gg7JOQi176dgn7fhRs="
+      },
     frame: {
       version: 'next',
       name: APP_NAME,
