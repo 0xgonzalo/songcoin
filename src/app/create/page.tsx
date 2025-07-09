@@ -247,11 +247,11 @@ export default function CreatePage() {
 
       if (createMode === 'single') {
         const audioFileCid = await uploadFileToIPFS(audioFile!, (progress) => {
-          setUploadProgress(prev => ({ ...prev, audioFile: progress }));
-        });
+        setUploadProgress(prev => ({ ...prev, audioFile: progress }));
+      });
         audioContent = audioFileCid;
         totalSize = audioFile!.size;
-        console.log('✅ Audio file uploaded:', audioFileCid);
+      console.log('✅ Audio file uploaded:', audioFileCid);
       } else {
         // Album mode: upload all tracks
         const trackCids: string[] = [];
@@ -279,14 +279,14 @@ export default function CreatePage() {
       
       if (createMode === 'single') {
         metadata = {
-          name,
-          description,
-          image: `ipfs://${coverImageCid}`,
+        name,
+        description,
+        image: `ipfs://${coverImageCid}`,
           animation_url: `ipfs://${audioContent}`,
-          attributes: [
-            { trait_type: 'Artist', value: artist },
-            { trait_type: 'Genre', value: genre || 'Other' },
-            { trait_type: 'Type', value: 'Music' },
+        attributes: [
+          { trait_type: 'Artist', value: artist },
+          { trait_type: 'Genre', value: genre || 'Other' },
+          { trait_type: 'Type', value: 'Music' },
             { trait_type: 'File Type', value: audioFile!.type },
             { trait_type: 'File Size', value: `${(audioFile!.size / (1024 * 1024)).toFixed(2)} MB` }
           ]

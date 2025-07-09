@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useZoraEvents } from '~/hooks/useZoraEvents';
 import { useAudioPlayer } from '~/components/providers/AudioPlayerProvider';
+import { TradeModal } from '~/components/TradeModal';
 import { type Track } from '~/lib/tracks';
 import { 
   Play, 
@@ -27,6 +28,8 @@ export default function TokenPage() {
   const { currentTrack, isPlaying, toggle } = useAudioPlayer();
   const [imageError, setImageError] = useState(false);
   const [shareSupported, setShareSupported] = useState(false);
+  const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
+  const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
 
   // Find the coin by tokenId (coin address)
   const coin = coins.find(c => c.coinAddress.toLowerCase() === tokenId.toLowerCase());
@@ -80,6 +83,15 @@ export default function TokenPage() {
     if (track && coin?.audioUrl) {
       toggle(track);
     }
+  };
+
+  const handleOpenTradeModal = (type: 'buy' | 'sell') => {
+    setTradeType(type);
+    setIsTradeModalOpen(true);
+  };
+
+  const handleCloseTradeModal = () => {
+    setIsTradeModalOpen(false);
   };
 
   const isCurrentlyPlaying = currentTrack?.id === coin?.coinAddress && isPlaying;
@@ -324,10 +336,16 @@ export default function TokenPage() {
 
               {/* Trading Buttons */}
               <div className="space-y-3">
-                <button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                <button 
+                  onClick={() => handleOpenTradeModal('buy')}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+                >
                   Buy Coin
                 </button>
-                <button className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                <button 
+                  onClick={() => handleOpenTradeModal('sell')}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+                >
                   Sell Coin
                 </button>
               </div>
@@ -374,6 +392,18 @@ export default function TokenPage() {
           </div>
         </div>
       </div>
+
+      {/* Trade Modal */}
+      {coin && (
+        <TradeModal
+          isOpen={isTradeModalOpen}
+          onClose={handleCloseTradeModal}
+          coinAddress={coin.coinAddress}
+          coinName={coin.name}
+          coinSymbol={coin.symbol}
+          tradeType={tradeType}
+        />
+      )}
     </div>
   );
 } 
