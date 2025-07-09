@@ -44,6 +44,35 @@ interface TrackMetadata {
   [key: string]: unknown;
 }
 
+// Types for Zora CoinCreatedV4 event arguments
+interface PoolKey {
+  currency0: Address;
+  currency1: Address;
+  fee: number;
+  tickSpacing: number;
+  hooks: Address;
+}
+
+interface CoinCreatedV4Args {
+  caller: Address;
+  payoutRecipient: Address;
+  platformReferrer: Address;
+  currency: Address;
+  uri: string;
+  name: string;
+  symbol: string;
+  coin: Address;
+  poolKey: PoolKey;
+  poolKeyHash: string;
+  version: string;
+}
+
+interface LogWithArgs {
+  blockNumber: bigint;
+  transactionHash: string;
+  args: CoinCreatedV4Args;
+}
+
 export interface MusicCoin {
   coinAddress: Address;
   name: string;
@@ -235,10 +264,10 @@ export function useZoraEvents() {
             console.log(`📋 Broader search events:`, broadLogs.map(log => ({
               blockNumber: log.blockNumber,
               transactionHash: log.transactionHash,
-              name: (log.args as any).name,
-              symbol: (log.args as any).symbol,
-              coin: (log.args as any).coin,
-              platformReferrer: (log.args as any).platformReferrer
+              name: (log as unknown as LogWithArgs).args.name,
+              symbol: (log as unknown as LogWithArgs).args.symbol,
+              coin: (log as unknown as LogWithArgs).args.coin,
+              platformReferrer: (log as unknown as LogWithArgs).args.platformReferrer
             })));
             allLogs.push(...broadLogs);
           } else {
@@ -255,7 +284,7 @@ export function useZoraEvents() {
             if (allEventsInRange.length > 0) {
               console.log(`🔍 Found ${allEventsInRange.length} total CoinCreated events in range ${searchStart} to ${searchEnd} with different platform referrers:`);
               allEventsInRange.forEach(log => {
-                console.log(`- Block: ${log.blockNumber}, Platform referrer: ${(log.args as any).platformReferrer}, Name: ${(log.args as any).name}`);
+                console.log(`- Block: ${log.blockNumber}, Platform referrer: ${(log as unknown as LogWithArgs).args.platformReferrer}, Name: ${(log as unknown as LogWithArgs).args.name}`);
               });
             } else {
               console.log(`❌ Range ${searchStart} to ${searchEnd} has NO CoinCreated events at all`);
@@ -283,7 +312,7 @@ export function useZoraEvents() {
           console.log(`📊 Found ${recentEvents.length} total CoinCreated events in recent blocks:`);
           recentEvents.forEach((log, index) => {
             if (index < 5) { // Show first 5 events
-              console.log(`  ${index + 1}. Block: ${log.blockNumber}, Platform: ${(log.args as any).platformReferrer}, Name: ${(log.args as any).name}`);
+              console.log(`  ${index + 1}. Block: ${log.blockNumber}, Platform: ${(log as unknown as LogWithArgs).args.platformReferrer}, Name: ${(log as unknown as LogWithArgs).args.name}`);
             }
           });
           if (recentEvents.length > 5) {
@@ -318,10 +347,10 @@ export function useZoraEvents() {
             console.log(`📋 Direct query events:`, directLogs.map(log => ({
               blockNumber: log.blockNumber,
               transactionHash: log.transactionHash,
-              name: (log.args as any).name,
-              symbol: (log.args as any).symbol,
-              coin: (log.args as any).coin,
-              platformReferrer: (log.args as any).platformReferrer
+              name: (log as unknown as LogWithArgs).args.name,
+              symbol: (log as unknown as LogWithArgs).args.symbol,
+              coin: (log as unknown as LogWithArgs).args.coin,
+              platformReferrer: (log as unknown as LogWithArgs).args.platformReferrer
             })));
             allLogs.push(...directLogs);
           } else {
@@ -338,7 +367,7 @@ export function useZoraEvents() {
             if (allEventsInBlock.length > 0) {
               console.log(`🔍 Block 32617767 has ${allEventsInBlock.length} total CoinCreated events with different platform referrers:`);
               allEventsInBlock.forEach(log => {
-                console.log(`- Platform referrer: ${(log.args as any).platformReferrer}, Name: ${(log.args as any).name}`);
+                console.log(`- Platform referrer: ${(log as unknown as LogWithArgs).args.platformReferrer}, Name: ${(log as unknown as LogWithArgs).args.name}`);
               });
             } else {
               console.log(`❌ Block 32617767 has NO CoinCreated events at all`);
@@ -378,10 +407,10 @@ export function useZoraEvents() {
             console.log(`📋 Events details:`, logs.map(log => ({
               blockNumber: log.blockNumber,
               transactionHash: log.transactionHash,
-              name: (log.args as any).name,
-              symbol: (log.args as any).symbol,
-              coin: (log.args as any).coin,
-              platformReferrer: (log.args as any).platformReferrer
+              name: (log as unknown as LogWithArgs).args.name,
+              symbol: (log as unknown as LogWithArgs).args.symbol,
+              coin: (log as unknown as LogWithArgs).args.coin,
+              platformReferrer: (log as unknown as LogWithArgs).args.platformReferrer
             })));
             allLogs.push(...logs);
             consecutiveEmptyBatches = 0;
@@ -414,15 +443,13 @@ export function useZoraEvents() {
   };
 
   // Function to process logs and create coin objects
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const processLogs = async (logs: any[]) => {
+  const processLogs = async (logs: LogWithArgs[]) => {
     setProgressMessage('Processing coin data...');
     
     const processedCoins: MusicCoin[] = [];
     
     for (let i = 0; i < logs.length; i++) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const log = logs[i] as any;
+      const log = logs[i] as unknown as LogWithArgs;
       const logIndex = i + 1;
       
       try {
