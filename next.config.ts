@@ -32,6 +32,15 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'gateway.pinata.cloud',
       },
+      {
+        protocol: 'https',
+        hostname: 'turquoise-effective-hyena-697.mypinata.cloud',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.mypinata.cloud',
+        pathname: '/**',
+      },
     ],
   },
   // Configure external packages for server components

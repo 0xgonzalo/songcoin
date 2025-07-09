@@ -18,9 +18,8 @@ export default function HomePage() {
   const { coins, loading, error, progressMessage, refreshCoins } = useZoraEvents();
   const { currentTrack, isPlaying, toggle } = useAudioPlayer();
   const [selectedGenre, setSelectedGenre] = useState("All");
-  const [showOnlyWithAudio, setShowOnlyWithAudio] = useState(false);
 
-  // Filter coins based on selected genre and audio availability
+  // Filter coins based on selected genre
   const filteredCoins = coins.filter(coin => {
     const genreMatch = selectedGenre === "All" || 
       (coin.metadata && 'attributes' in coin.metadata && 
@@ -30,8 +29,7 @@ export default function HomePage() {
          'trait_type' in attr && (attr as { trait_type: string }).trait_type === 'Genre' &&
          'value' in attr && (attr as { value: string }).value === selectedGenre
        ));
-    const audioMatch = !showOnlyWithAudio || coin.audioUrl;
-    return genreMatch && audioMatch;
+    return genreMatch;
   });
 
   // Stats calculations
@@ -162,7 +160,7 @@ export default function HomePage() {
         <FeaturedSongs />
 
         {/* Filters */}
-        <div className="mb-6 space-y-4">
+        <div className="mb-6">
           {/* Genre Filter */}
           <div>
             <label className="block text-sm text-gray-400 mb-2">Filter by Genre:</label>
@@ -177,20 +175,6 @@ export default function HomePage() {
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Audio Filter */}
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="audioFilter"
-              checked={showOnlyWithAudio}
-              onChange={(e) => setShowOnlyWithAudio(e.target.checked)}
-              className="w-4 h-4 text-purple-600 bg-gray-800 border-gray-600 rounded focus:ring-purple-500"
-            />
-            <label htmlFor="audioFilter" className="text-sm text-gray-400">
-              Show only coins with audio
-            </label>
           </div>
         </div>
       </div>
@@ -267,7 +251,7 @@ export default function HomePage() {
                 <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-2">No Music Coins Found</h3>
                 <p className="text-gray-400 mb-6">
-                  {selectedGenre !== "All" || showOnlyWithAudio
+                  {selectedGenre !== "All"
                     ? "Try adjusting your filters or check back later."
                     : "No music coins have been created yet. Be the first to create one!"}
                 </p>

@@ -37,7 +37,7 @@ export const featuredTracks: Track[] = [
     artist: "Sol Siete",
     album: "Peace Collection",
     genre: "Electronic",
-    cover: "/api/placeholder/120/120",
+    cover: "/placeholders/1.jpg",
     isPlaying: false,
     mcap: "$4.8K",
     vol24h: "$480",
@@ -49,7 +49,7 @@ export const featuredTracks: Track[] = [
     artist: "Nenx",
     album: "Protest",
     genre: "Hip Hop",
-    cover: "/api/placeholder/120/120",
+    cover: "/placeholders/2.jpg",
     isPlaying: false,
     mcap: "$21.6K",
     vol24h: "$2.1K",
@@ -61,7 +61,7 @@ export const featuredTracks: Track[] = [
     artist: "GyiAMV",
     album: "Action",
     genre: "Trap",
-    cover: "/api/placeholder/120/120",
+    cover: "/placeholders/3.jpg",
     isPlaying: false,
     mcap: "$25.0K",
     vol24h: "$2.5K",
@@ -73,7 +73,7 @@ export const featuredTracks: Track[] = [
     artist: "SynthWave",
     album: "Neon Dreams",
     genre: "Synthwave",
-    cover: "/api/placeholder/120/120",
+    cover: "/placeholders/4.jpg",
     isPlaying: false,
     mcap: "$15.2K",
     vol24h: "$1.8K",
@@ -85,7 +85,7 @@ export const featuredTracks: Track[] = [
     artist: "ElectroMix",
     album: "Club Hits",
     genre: "EDM",
-    cover: "/api/placeholder/120/120",
+    cover: "/placeholders/5.jpg",
     isPlaying: false,
     mcap: "$32.1K",
     vol24h: "$3.2K",
@@ -97,7 +97,7 @@ export const featuredTracks: Track[] = [
     artist: "santiagoruau",
     album: "",
     genre: "Electronic",
-    cover: "/api/placeholder/120/120",
+    cover: "/placeholders/6.jpg",
     isPlaying: false,
     mcap: "$191.62",
     vol24h: "$2.53",
@@ -112,7 +112,7 @@ export const tokenData: Record<string, TokenData> = {
     title: "Dominga",
     artist: "santiagoruau",
     genre: "Electronic",
-    cover: "/api/placeholder/400/400",
+    cover: "/placeholders/6.jpg",
     mcap: "$191.62",
     totalVolume: "$2.53",
     creatorEarnings: "$0",
@@ -120,7 +120,7 @@ export const tokenData: Record<string, TokenData> = {
     replies: 105,
     creator: {
       username: "santiagoruau",
-      avatar: "/api/placeholder/40/40"
+      avatar: "/icon.png"
     },
     audio: "/music/Villamizar, Fenky, Gustavo Dominguez - Hold You (Original Mix).mp3"
   },
@@ -129,7 +129,7 @@ export const tokenData: Record<string, TokenData> = {
     title: "Miradas",
     artist: "Sol Siete",
     genre: "Electronic",
-    cover: "/api/placeholder/400/400",
+    cover: "/placeholders/1.jpg",
     mcap: "$4.8K",
     totalVolume: "$480",
     creatorEarnings: "$12",
@@ -137,7 +137,7 @@ export const tokenData: Record<string, TokenData> = {
     replies: 23,
     creator: {
       username: "solsiete",
-      avatar: "/api/placeholder/40/40"
+      avatar: "/icon.png"
     },
     audio: "/music/WhoMadeWho & Blue Hawaii - Sweet Cuddles (Selim Sivade, Baron FR, Meloko, Konvex FR Remix).mp3"
   },
@@ -146,7 +146,7 @@ export const tokenData: Record<string, TokenData> = {
     title: "Por amarte Asi",
     artist: "Nenx",
     genre: "Hip Hop",
-    cover: "/api/placeholder/400/400",
+    cover: "/placeholders/2.jpg",
     mcap: "$21.6K",
     totalVolume: "$2.1K",
     creatorEarnings: "$54",
@@ -154,7 +154,7 @@ export const tokenData: Record<string, TokenData> = {
     replies: 87,
     creator: {
       username: "nenx_music",
-      avatar: "/api/placeholder/40/40"
+      avatar: "/icon.png"
     },
     audio: "/music/Volon - Going Up (Original Mix).mp3"
   },
@@ -163,7 +163,7 @@ export const tokenData: Record<string, TokenData> = {
     title: "Vin Diesel",
     artist: "GyiAMV",
     genre: "Trap",
-    cover: "/api/placeholder/400/400",
+    cover: "/placeholders/3.jpg",
     mcap: "$25.0K",
     totalVolume: "$2.5K",
     creatorEarnings: "$62",
@@ -171,7 +171,7 @@ export const tokenData: Record<string, TokenData> = {
     replies: 156,
     creator: {
       username: "gyiamv",
-      avatar: "/api/placeholder/40/40"
+      avatar: "/icon.png"
     },
     audio: "/music/Volon - 2Pacman (Original Mix).mp3"
   },
@@ -180,7 +180,7 @@ export const tokenData: Record<string, TokenData> = {
     title: "Midnight Vibes",
     artist: "SynthWave",
     genre: "Synthwave",
-    cover: "/api/placeholder/400/400",
+    cover: "/placeholders/4.jpg",
     mcap: "$15.2K",
     totalVolume: "$1.8K",
     creatorEarnings: "$38",
@@ -188,7 +188,7 @@ export const tokenData: Record<string, TokenData> = {
     replies: 67,
     creator: {
       username: "synthwave_official",
-      avatar: "/api/placeholder/40/40"
+      avatar: "/icon.png"
     },
     audio: "/music/Voch - Illusion (Extended Mix).mp3"
   },
@@ -197,7 +197,7 @@ export const tokenData: Record<string, TokenData> = {
     title: "Bass Drop",
     artist: "ElectroMix",
     genre: "EDM",
-    cover: "/api/placeholder/400/400",
+    cover: "/placeholders/5.jpg",
     mcap: "$32.1K",
     totalVolume: "$3.2K",
     creatorEarnings: "$81",
@@ -205,7 +205,7 @@ export const tokenData: Record<string, TokenData> = {
     replies: 203,
     creator: {
       username: "electromix_dj",
-      avatar: "/api/placeholder/40/40"
+      avatar: "/icon.png"
     },
     audio: "/music/Vincent Jarroux - Phoenix.mp3"
   },

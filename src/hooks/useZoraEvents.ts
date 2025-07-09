@@ -10,7 +10,7 @@ const ZORA_FACTORY_ADDRESS = '0x777777751622c0d3258f214F9DF38E35BF45baF3' as Add
 // Platform referrer address we're filtering for
 const PLATFORM_REFERRER = '0x79166ff20D3C3276b42eCE079a50C30b603167a6' as Address;
 
-// ABI for the CoinCreated event
+// ABI for the CoinCreatedV4 event (updated to V4)
 const COIN_CREATED_EVENT: AbiEvent = {
   anonymous: false,
   inputs: [
@@ -22,10 +22,17 @@ const COIN_CREATED_EVENT: AbiEvent = {
     { indexed: false, name: 'name', type: 'string' },
     { indexed: false, name: 'symbol', type: 'string' },
     { indexed: false, name: 'coin', type: 'address' },
-    { indexed: false, name: 'pool', type: 'address' },
+    { indexed: false, name: 'poolKey', type: 'tuple', components: [
+      { name: 'currency0', type: 'address' },
+      { name: 'currency1', type: 'address' },
+      { name: 'fee', type: 'uint24' },
+      { name: 'tickSpacing', type: 'int24' },
+      { name: 'hooks', type: 'address' }
+    ]},
+    { indexed: false, name: 'poolKeyHash', type: 'bytes32' },
     { indexed: false, name: 'version', type: 'string' }
   ],
-  name: 'CoinCreated',
+  name: 'CoinCreatedV4',
   type: 'event'
 };
 
@@ -103,11 +110,15 @@ const publicClient = createPublicClient({
 
 // Pagination constants for getLogs
 const BLOCKS_PER_BATCH = 950; // Limited to 1000 blocks per batch as required by RPC provider
-const START_BLOCK = BigInt(30146328); // Start from a more recent block to find the latest coins
-// Known block where a specific coin may be
-const KNOWN_COIN_BLOCKS = [
-  BigInt(30146328)
-];
+const START_BLOCK = BigInt(32617766); // Start from block 22836206 as requested
+
+// Debug: Function to clear cache manually
+export const clearCoinCache = () => {
+  console.log('🗑️ Clearing coin cache...');
+  Object.keys(eventCache).forEach(key => {
+    delete eventCache[key];
+  });
+};
 
 // Add these constants at the top with other constants
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
@@ -198,41 +209,158 @@ export function useZoraEvents() {
       let batchCount = 0;
       let consecutiveEmptyBatches = 0;
       
-      // First prioritize scanning known blocks where coins may exist
-      for (const knownBlock of KNOWN_COIN_BLOCKS) {
-        if (knownBlock >= START_BLOCK && knownBlock <= latestBlock) {
-          const startKnownBlock = knownBlock;
-          const endKnownBlock = knownBlock + BigInt(BLOCKS_PER_BATCH);
+      // First, do a broader search around the target block
+      const targetBlock = BigInt(32617767);
+      const searchRange = BigInt(100); // Search 100 blocks before and after
+      const searchStart = targetBlock - searchRange > START_BLOCK ? targetBlock - searchRange : START_BLOCK;
+      const searchEnd = targetBlock + searchRange < latestBlock ? targetBlock + searchRange : latestBlock;
+      
+      if (searchStart <= latestBlock && searchEnd >= START_BLOCK) {
+        console.log(`🎯 Broader search for token around block 32617767 (searching ${searchStart} to ${searchEnd})...`);
+        setProgressMessage(`Broader search around block 32617767...`);
+        
+        try {
+          const broadLogs = await publicClient.getLogs({
+            address: ZORA_FACTORY_ADDRESS,
+            event: COIN_CREATED_EVENT,
+            args: {
+              platformReferrer: PLATFORM_REFERRER,
+            },
+            fromBlock: searchStart,
+            toBlock: searchEnd,
+          });
           
-          setProgressMessage(`Scanning known coin blocks: ${startKnownBlock} - ${endKnownBlock}`);
-          
-          try {
-            const logs = await publicClient.getLogs({
+          if (broadLogs.length > 0) {
+            console.log(`🎉 BROADER SEARCH SUCCESS: Found ${broadLogs.length} events in range ${searchStart} to ${searchEnd}!`);
+            console.log(`📋 Broader search events:`, broadLogs.map(log => ({
+              blockNumber: log.blockNumber,
+              transactionHash: log.transactionHash,
+              name: (log.args as any).name,
+              symbol: (log.args as any).symbol,
+              coin: (log.args as any).coin,
+              platformReferrer: (log.args as any).platformReferrer
+            })));
+            allLogs.push(...broadLogs);
+          } else {
+            console.log(`❌ Broader search: No events found in range ${searchStart} to ${searchEnd} with platform referrer ${PLATFORM_REFERRER}`);
+            
+            // Try querying without platform referrer filter to see if there are ANY events in this range
+            const allEventsInRange = await publicClient.getLogs({
               address: ZORA_FACTORY_ADDRESS,
               event: COIN_CREATED_EVENT,
-              args: {
-                platformReferrer: PLATFORM_REFERRER,
-              },
-              fromBlock: startKnownBlock,
-              toBlock: endKnownBlock > latestBlock ? latestBlock : endKnownBlock,
+              fromBlock: searchStart,
+              toBlock: searchEnd,
             });
             
-            if (logs.length > 0) {
-              console.log(`Found ${logs.length} coin creation events in known blocks`);
-              allLogs.push(...logs);
+            if (allEventsInRange.length > 0) {
+              console.log(`🔍 Found ${allEventsInRange.length} total CoinCreated events in range ${searchStart} to ${searchEnd} with different platform referrers:`);
+              allEventsInRange.forEach(log => {
+                console.log(`- Block: ${log.blockNumber}, Platform referrer: ${(log.args as any).platformReferrer}, Name: ${(log.args as any).name}`);
+              });
+            } else {
+              console.log(`❌ Range ${searchStart} to ${searchEnd} has NO CoinCreated events at all`);
             }
-          } catch (error) {
-            console.error('Error fetching logs from known blocks:', error);
           }
+        } catch (error) {
+          console.error(`❌ Error in broader search around block 32617767:`, error);
         }
       }
       
-      // Now scan more recent blocks in batches
-      while (currentBlock <= latestBlock && batchCount < 10) { // Limit to prevent infinite loops
+      // Search for ANY recent CoinCreated events to verify the system is working
+      const recentStart = latestBlock - BigInt(1000); // Last 1000 blocks
+      console.log(`🔍 Searching for ANY CoinCreated events in recent blocks ${recentStart} to ${latestBlock}...`);
+      setProgressMessage(`Searching for any recent coin creation events...`);
+      
+      try {
+        const recentEvents = await publicClient.getLogs({
+          address: ZORA_FACTORY_ADDRESS,
+          event: COIN_CREATED_EVENT,
+          fromBlock: recentStart,
+          toBlock: latestBlock,
+        });
+        
+        if (recentEvents.length > 0) {
+          console.log(`📊 Found ${recentEvents.length} total CoinCreated events in recent blocks:`);
+          recentEvents.forEach((log, index) => {
+            if (index < 5) { // Show first 5 events
+              console.log(`  ${index + 1}. Block: ${log.blockNumber}, Platform: ${(log.args as any).platformReferrer}, Name: ${(log.args as any).name}`);
+            }
+          });
+          if (recentEvents.length > 5) {
+            console.log(`  ... and ${recentEvents.length - 5} more events`);
+          }
+        } else {
+          console.log(`❌ NO CoinCreated events found in recent blocks ${recentStart} to ${latestBlock}`);
+          console.log(`⚠️  This could indicate an RPC issue or no coins are being created at all`);
+        }
+      } catch (error) {
+        console.error(`❌ Error searching for recent events:`, error);
+      }
+      
+      // Also do the direct query for the specific block
+      if (targetBlock >= START_BLOCK && targetBlock <= latestBlock) {
+        console.log(`🎯 Direct query for block 32617767 where token should be...`);
+        setProgressMessage(`Direct scan of block 32617767...`);
+        
+        try {
+          const directLogs = await publicClient.getLogs({
+            address: ZORA_FACTORY_ADDRESS,
+            event: COIN_CREATED_EVENT,
+            args: {
+              platformReferrer: PLATFORM_REFERRER,
+            },
+            fromBlock: targetBlock,
+            toBlock: targetBlock,
+          });
+          
+          if (directLogs.length > 0) {
+            console.log(`🎉 DIRECT QUERY SUCCESS: Found ${directLogs.length} events in block 32617767!`);
+            console.log(`📋 Direct query events:`, directLogs.map(log => ({
+              blockNumber: log.blockNumber,
+              transactionHash: log.transactionHash,
+              name: (log.args as any).name,
+              symbol: (log.args as any).symbol,
+              coin: (log.args as any).coin,
+              platformReferrer: (log.args as any).platformReferrer
+            })));
+            allLogs.push(...directLogs);
+          } else {
+            console.log(`❌ Direct query: No events found in block 32617767 with platform referrer ${PLATFORM_REFERRER}`);
+            
+            // Try querying without platform referrer filter to see if there are ANY events
+            const allEventsInBlock = await publicClient.getLogs({
+              address: ZORA_FACTORY_ADDRESS,
+              event: COIN_CREATED_EVENT,
+              fromBlock: targetBlock,
+              toBlock: targetBlock,
+            });
+            
+            if (allEventsInBlock.length > 0) {
+              console.log(`🔍 Block 32617767 has ${allEventsInBlock.length} total CoinCreated events with different platform referrers:`);
+              allEventsInBlock.forEach(log => {
+                console.log(`- Platform referrer: ${(log.args as any).platformReferrer}, Name: ${(log.args as any).name}`);
+              });
+            } else {
+              console.log(`❌ Block 32617767 has NO CoinCreated events at all`);
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Error in direct query for block 32617767:`, error);
+        }
+      }
+      
+      // Now scan blocks in batches (removed consecutive empty batch stopping condition)
+      while (currentBlock <= latestBlock && batchCount < 30) { // Increased batch limit
         const endBlock = currentBlock + BigInt(BLOCKS_PER_BATCH);
         const actualEndBlock = endBlock > latestBlock ? latestBlock : endBlock;
         
         setProgressMessage(`Scanning blocks ${currentBlock} - ${actualEndBlock} (batch ${batchCount + 1})`);
+        console.log(`🔍 Scanning blocks ${currentBlock} - ${actualEndBlock} (batch ${batchCount + 1})`);
+        
+        // Special logging for the specific block where token should be
+        if (currentBlock <= BigInt(32617767) && actualEndBlock >= BigInt(32617767)) {
+          console.log(`🎯 This batch includes block 32617767 where token should be!`);
+        }
         
         try {
           const logs = await publicClient.getLogs({
@@ -246,22 +374,24 @@ export function useZoraEvents() {
           });
           
           if (logs.length > 0) {
-            console.log(`Found ${logs.length} coin creation events in batch ${batchCount + 1}`);
+            console.log(`✅ Found ${logs.length} coin creation events in batch ${batchCount + 1}`);
+            console.log(`📋 Events details:`, logs.map(log => ({
+              blockNumber: log.blockNumber,
+              transactionHash: log.transactionHash,
+              name: (log.args as any).name,
+              symbol: (log.args as any).symbol,
+              coin: (log.args as any).coin,
+              platformReferrer: (log.args as any).platformReferrer
+            })));
             allLogs.push(...logs);
             consecutiveEmptyBatches = 0;
           } else {
             consecutiveEmptyBatches++;
-            console.log(`No events found in batch ${batchCount + 1}, consecutive empty batches: ${consecutiveEmptyBatches}`);
-          }
-          
-          // If we've had several consecutive empty batches, stop scanning older blocks
-          if (consecutiveEmptyBatches >= 5) {
-            console.log('Stopping scan due to consecutive empty batches');
-            break;
+            console.log(`❌ No events found in batch ${batchCount + 1} (blocks ${currentBlock} - ${actualEndBlock}), consecutive empty batches: ${consecutiveEmptyBatches}`);
           }
           
         } catch (error) {
-          console.error(`Error fetching logs for batch ${batchCount + 1}:`, error);
+          console.error(`❌ Error fetching logs for batch ${batchCount + 1}:`, error);
           // Continue with next batch even if one fails
         }
         
@@ -388,13 +518,22 @@ export function useZoraEvents() {
       // Process logs into coin objects
       const processedCoins = await processLogs(logs);
       
+      // Deduplicate coins by coinAddress to prevent React key conflicts
+      const uniqueCoins = processedCoins.filter((coin, index, self) => 
+        index === self.findIndex(c => c.coinAddress === coin.coinAddress)
+      );
+      
+      if (processedCoins.length !== uniqueCoins.length) {
+        console.log(`🔄 Deduplication: Reduced ${processedCoins.length} coins to ${uniqueCoins.length} unique coins`);
+      }
+      
       // Cache the results
       eventCache[cacheKey] = {
-        data: processedCoins,
+        data: uniqueCoins,
         timestamp: Date.now()
       };
       
-      setCoins(processedCoins);
+      setCoins(uniqueCoins);
       setProgressMessage(null);
       
     } catch (error) {
@@ -436,6 +575,7 @@ export function useZoraEvents() {
     loading,
     error,
     refreshCoins,
-    progressMessage
+    progressMessage,
+    clearCoinCache
   };
 } 

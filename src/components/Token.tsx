@@ -187,7 +187,7 @@ export default function Token({ tokenId = "dominga" }: { tokenId?: string }) {
               <span className="text-gray-400">Minimum received</span>
               <div className="flex items-center space-x-2">
                 <Image 
-                  src="/api/placeholder/24/24" 
+                  src="/placeholders/1.jpg" 
                   alt="token" 
                   width={24} 
                   height={24} 

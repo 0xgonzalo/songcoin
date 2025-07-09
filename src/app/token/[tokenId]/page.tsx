@@ -69,7 +69,7 @@ export default function TokenPage() {
     artist: coin.artistName,
     album: '',
     genre: 'Music', // Simplified for now
-    cover: imageError ? '/api/placeholder/120/120' : coin.coverArt,
+    cover: imageError ? '/placeholders/1.jpg' : coin.coverArt,
     isPlaying: currentTrack?.id === coin.coinAddress && isPlaying,
     mcap: "$0", // TODO: Add market cap fetching
     vol24h: "$0", // TODO: Add volume fetching
@@ -171,7 +171,7 @@ export default function TokenPage() {
                 {/* Cover Art */}
                 <div className="relative w-32 h-32 flex-shrink-0 group">
                   <Image
-                    src={imageError ? '/api/placeholder/128/128' : coin.coverArt}
+                    src={imageError ? '/placeholders/1.jpg' : coin.coverArt}
                     alt={coin.name}
                     width={128}
                     height={128}

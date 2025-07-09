@@ -53,7 +53,7 @@ export default function MusicCoinCard({
     artist: artistName,
     album: '',
     genre: 'Music',
-    cover: imageError ? '/api/placeholder/120/120' : coverArt,
+    cover: imageError ? '/placeholders/1.jpg' : coverArt,
     isPlaying: currentTrack?.id === coinAddress && isPlaying,
     mcap: marketCap,
     vol24h: volume24h,
@@ -81,7 +81,7 @@ export default function MusicCoinCard({
         {/* Cover Art with Play Button */}
         <div className="relative w-16 h-16 flex-shrink-0 group">
           <Image
-            src={imageError ? '/api/placeholder/64/64' : coverArt}
+            src={imageError ? '/placeholders/1.jpg' : coverArt}
             alt={name}
             width={64}
             height={64}
