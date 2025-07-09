@@ -7,11 +7,12 @@ import { useZoraEvents } from '~/hooks/useZoraEvents';
 import { useAudioPlayer } from '~/components/providers/AudioPlayerProvider';
 import MusicCoinCard from '~/components/MusicCoinCard';
 import { featuredTracks } from '~/lib/tracks';
+import { MUSIC_GENRES } from '~/components/Create/types';
 import { Loader2, Music, TrendingUp, Users, Coins } from 'lucide-react';
 
 
-// Genre filter options
-const genres = ["All", "Electronic", "Hip Hop", "Rock", "Pop", "Ambient", "Other"];
+// Genre filter options - using the same genres as the create page
+const genres = ["All", ...MUSIC_GENRES];
 
 export default function HomePage() {
   const { coins, loading, error, progressMessage, refreshCoins } = useZoraEvents();
@@ -164,22 +165,18 @@ export default function HomePage() {
         <div className="mb-6 space-y-4">
           {/* Genre Filter */}
           <div>
-            <div className="text-sm text-gray-400 mb-2">Filter by Genre:</div>
-            <div className="flex flex-wrap gap-2">
+            <label className="block text-sm text-gray-400 mb-2">Filter by Genre:</label>
+            <select
+              value={selectedGenre}
+              onChange={(e) => setSelectedGenre(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
               {genres.map(genre => (
-                <button
-                  key={genre}
-                  onClick={() => setSelectedGenre(genre)}
-                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                    selectedGenre === genre
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  }`}
-                >
+                <option key={genre} value={genre} className="bg-gray-800">
                   {genre}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           {/* Audio Filter */}

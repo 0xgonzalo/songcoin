@@ -1,18 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: "/", label: "Home", icon: (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M4 10v10a1 1 0 001 1h3m10-11v10a1 1 0 01-1 1h-3m-4 0h4" /></svg>
-  ) },
-  { href: "/create", label: "Create", icon: (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-  ) },
-  { href: "/profile", label: "Profile", icon: (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A9 9 0 1112 21a9 9 0 01-6.879-3.196z" /></svg>
-  ) },
+  { href: "/", label: "Home", icon: "/icons/home.png" },
+  { href: "/create", label: "Create", icon: "/icons/create.png" },
+  { href: "/profile", label: "Profile", icon: "/icons/profile.png" },
 ];
 
 export function AppFooter() {
@@ -29,7 +24,13 @@ export function AppFooter() {
             className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${isActive ? "text-purple-500" : "text-gray-400 hover:text-white"}`}
             aria-label={item.label}
           >
-            {item.icon}
+            <Image
+              src={item.icon}
+              alt={item.label}
+              width={24}
+              height={24}
+              className={`transition-opacity ${isActive ? "opacity-100" : "opacity-70 hover:opacity-100"}`}
+            />
             <span className="text-xs mt-1 font-medium">{item.label}</span>
           </Link>
         );
