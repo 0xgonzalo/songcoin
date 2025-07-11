@@ -2,7 +2,7 @@
 
 
 ### Introduction
-Songcoin is a Farcaster Mini App that lets musicians upload songs or albums and mint tokenized music releases using Zora’s Coins Protocol. Each new release (single or album) gets its own ERC-20 “song coin” with on-chain metadata pointing to the music file. Songcoin is designed as a social platform: by running natively in Farcaster, it leverages the Farcaster social graph and wallet integration for seamless user engagement. Users sign in with their Farcaster identity, share new songs to their feeds, and trade music tokens on-chain. This paper details Songcoin’s architecture, features, and MVP implementation, highlighting its integrations with Farcaster, Zora, IPFS (via Pinata), and Uniswap.
+Songcoin is a Farcaster Mini App that lets musicians upload songs or albums and mint tokenized music releases using Zora’s Coins Protocol. Each new release (single or album) gets its own ERC-20 “song coin” with onchain metadata pointing to the music file. Songcoin is designed as a social platform: by running natively in Farcaster, it leverages the Farcaster social graph and wallet integration for seamless user engagement. Users sign in with their Farcaster identity, share new songs to their feeds, and trade music tokens on-chain. This paper details Songcoin’s architecture, features, and MVP implementation, highlighting its integrations with Farcaster, Zora, IPFS (via Pinata), and Uniswap.
 
 ### System Architecture
 
