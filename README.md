@@ -1,4 +1,4 @@
-# Songcoin: Create, Explore and trade Music Coins 🪐
+# Songcoin: Create, Explore and trade Music Coins 🎵
 
 
 ### Introduction
