@@ -66,7 +66,7 @@ export function useZoraCoins() {
   /**
    * Create a new coin
    */
-  const createMusicCoin = useCallback(async (coinData: CoinData) => {
+  const createSongcoin = useCallback(async (coinData: CoinData) => {
     if (!walletClient || !publicClient || !isConnected) {
       setCreateCoinError(new Error('Wallet not connected'));
       return;
@@ -113,7 +113,7 @@ export function useZoraCoins() {
         }
       }
       
-      // Create the coin using the SDK - pass coinData directly like songcast-base
+      // Create the coin using the SDK - pass coinData directly
       const result = await createCoin(coinData, walletClient, publicClient);
       
       if (result.address) {
@@ -155,7 +155,7 @@ export function useZoraCoins() {
 
   return {
     // Coin creation
-    createMusicCoin,
+    createSongcoin,
     createCoinTransaction,
     isCreatingCoin,
     createCoinSuccess,

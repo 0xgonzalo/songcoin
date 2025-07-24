@@ -16,10 +16,10 @@ const MUSIC_GENRES = [
   "R&B", "Country", "Folk", "Metal", "Ambient", "Indie", "Other"
 ];
 
-export default function CreateMusicCoin() {
+export default function CreateSongcoin() {
   const { address, isConnected } = useAccount();
   const { 
-    createMusicCoin, 
+    createSongcoin, 
     isCreatingCoin, 
     createCoinSuccess, 
     createCoinError,
@@ -308,7 +308,7 @@ export default function CreateMusicCoin() {
       };
       
       // Create the coin
-      await createMusicCoin(coinData);
+      await createSongcoin(coinData);
       
       setUploadProgress(100);
       
@@ -337,7 +337,7 @@ export default function CreateMusicCoin() {
             </div>
             <h2 className="text-2xl mb-4 font-bold text-white">Wallet Connection Required</h2>
             <p className="text-gray-400 mb-6">
-              Please connect your wallet to create a music coin on Songcoin.
+              Please connect your wallet to create a songcoin on Songcoin.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button 
@@ -369,7 +369,7 @@ export default function CreateMusicCoin() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-4">Create Your Music Coin</h1>
+            <h1 className="text-4xl font-bold text-white mb-4">Create Your Songcoin</h1>
             <p className="text-gray-400 text-lg">
               Transform your music into a tradeable token on the blockchain
             </p>
@@ -383,7 +383,7 @@ export default function CreateMusicCoin() {
                 <h3 className="text-xl font-semibold text-white">Coin Created Successfully!</h3>
               </div>
               <p className="text-green-200 mb-4">
-                Your music coin has been successfully created and deployed to the blockchain.
+                Your songcoin has been successfully created and deployed to the blockchain.
               </p>
               {createdCoinAddress && (
                 <div className="bg-green-800/30 rounded-lg p-4 mb-4">
@@ -674,7 +674,7 @@ export default function CreateMusicCoin() {
                 ) : (
                   <>
                     <Coins className="mr-3" size={20} />
-                    Create Music Coin
+                    Create Songcoin
                   </>
                 )}
               </button>

@@ -1,6 +1,6 @@
 # Pinata Setup Guide
 
-This application uses Pinata for IPFS uploads when creating music coins. Follow these steps to set up your Pinata account and API keys.
+This application uses Pinata for IPFS uploads when creating  songcoins. Follow these steps to set up your Pinata account and API keys.
 
 ## 1. Create a Pinata Account
 

@@ -136,14 +136,14 @@ After setup, you'll have access to:
 - **IPFS Storage**: Audio files and metadata stored on IPFS via Pinata
 - **Blockchain Integration**: Full Zora protocol integration on Base
 - **Audio Player**: Built-in audio player with track management
-- **Coin Discovery**: Browse and filter created music coins
+- **Coin Discovery**: Browse and filter created songcoins
 - **Profile Management**: View user-created coins and portfolio
 - **Farcaster Frames**: Social sharing integration
 - **Responsive UI**: Mobile-first design with Tailwind CSS
 
 ### 🚧 Future Enhancements
 
-- **Trading**: Buy/sell functionality for music coins
+- **Trading**: Buy/sell functionality for songcoins
 - **Price Discovery**: Real-time pricing and market data
 - **Advanced Analytics**: Trading volume and market cap tracking
 - **Social Features**: Comments, likes, and artist following
@@ -193,7 +193,7 @@ For production deployment on Vercel:
 
 ## Next Steps
 
-1. Create your first music coin
+1. Create your first songcoin
 2. Test the audio player functionality
 3. Share your coins via Farcaster frames
 4. Explore the profile and discovery features

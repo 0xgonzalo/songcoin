@@ -50,7 +50,7 @@ export default function TokenPage() {
       try {
         await navigator.share({
           title: `${coin.name} (${coin.symbol})`,
-          text: `Check out this music coin by ${coin.artistName}`,
+          text: `Check out this songcoin by ${coin.artistName}`,
           url: window.location.href
         });
       } catch (error) {

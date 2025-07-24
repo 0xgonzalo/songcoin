@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useZoraEvents } from '~/hooks/useZoraEvents';
 import { useAudioPlayer } from '~/components/providers/AudioPlayerProvider';
-import MusicCoinCard from '~/components/MusicCoinCard';
+import SongcoinCard from '~/components/SongcoinCard';
 import { featuredTracks } from '~/lib/tracks';
 import { MUSIC_GENRES } from '~/components/Create/types';
 import { Loader2, Music, TrendingUp, Users, Coins } from 'lucide-react';
@@ -185,7 +185,7 @@ export default function HomePage() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="w-8 h-8 text-purple-500 animate-spin mb-4" />
-            <p className="text-white text-lg mb-2">Loading Music Coins...</p>
+            <p className="text-white text-lg mb-2">Loading Songcoins...</p>
             {progressMessage && (
               <p className="text-gray-400 text-sm text-center max-w-md">
                 {progressMessage}
@@ -218,7 +218,7 @@ export default function HomePage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-white">
-                    Music Coins ({filteredCoins.length})
+                    Song Coins ({filteredCoins.length})
                   </h2>
                   <button
                     onClick={refreshCoins}
@@ -229,7 +229,7 @@ export default function HomePage() {
                 </div>
 
                 {filteredCoins.map((coin) => (
-                  <MusicCoinCard
+                  <SongcoinCard
                     key={coin.coinAddress}
                     coinAddress={coin.coinAddress}
                     name={coin.name}
@@ -249,11 +249,11 @@ export default function HomePage() {
             ) : (
               <div className="text-center py-12">
                 <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">No Music Coins Found</h3>
+                <h3 className="text-xl font-semibold text-white mb-2">No Songcoins Found</h3>
                 <p className="text-gray-400 mb-6">
                   {selectedGenre !== "All"
                     ? "Try adjusting your filters or check back later."
-                    : "No music coins have been created yet. Be the first to create one!"}
+                    : "No songcoins have been created yet. Be the first to create one!"}
                 </p>
                 <Link
                   href="/create"

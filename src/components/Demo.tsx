@@ -35,7 +35,7 @@ import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import { Header } from "~/components/ui/Header";
 import { Footer } from "~/components/ui/Footer";
 import { USE_WALLET, APP_NAME } from "~/lib/constants";
-import MusicFeed from "./MusicFeed";
+import SongFeed from "./SongFeed";
 
 export type Tab = 'home' | 'actions' | 'context' | 'wallet';
 
@@ -55,9 +55,9 @@ export default function Demo(
     actions,
   } = useMiniApp();
 
-  // For now, just return the MusicFeed component
+  // For now, just return the SongFeed component
   // This can be expanded later to include authentication and other features
-  return <MusicFeed />;
+  return <SongFeed />;
 }
 
 // Solana functions inspired by farcaster demo

@@ -73,7 +73,7 @@ interface LogWithArgs {
   args: CoinCreatedV4Args;
 }
 
-export interface MusicCoin {
+export interface Songcoin {
   coinAddress: Address;
   name: string;
   symbol: string;
@@ -154,7 +154,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
 
 // Add this interface before the useZoraEvents function
 interface CacheEntry {
-  data: MusicCoin[];
+  data: Songcoin[];
   timestamp: number;
 }
 
@@ -205,7 +205,7 @@ export async function fetchTrackMetadata(metadataURI: string): Promise<TrackMeta
 }
 
 export function useZoraEvents() {
-  const [coins, setCoins] = useState<MusicCoin[]>([]);
+  const [coins, setCoins] = useState<Songcoin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -446,7 +446,7 @@ export function useZoraEvents() {
   const processLogs = async (logs: LogWithArgs[]) => {
     setProgressMessage('Processing coin data...');
     
-    const processedCoins: MusicCoin[] = [];
+    const processedCoins: Songcoin[] = [];
     
     for (let i = 0; i < logs.length; i++) {
       const log = logs[i] as unknown as LogWithArgs;
@@ -489,7 +489,7 @@ export function useZoraEvents() {
         }
         
         // Create coin object
-        const coin: MusicCoin = {
+        const coin: Songcoin = {
           coinAddress,
           name,
           symbol,

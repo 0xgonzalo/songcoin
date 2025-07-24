@@ -7,7 +7,7 @@ import { Play, Pause, TrendingUp, ExternalLink, Volume2 } from 'lucide-react';
 import { useAudioPlayer } from './providers/AudioPlayerProvider';
 import { type Track } from '~/lib/tracks';
 
-export interface MusicCoinCardProps {
+export interface SongcoinCardProps {
   coinAddress: string;
   name: string;
   symbol: string;
@@ -26,7 +26,7 @@ export interface MusicCoinCardProps {
   onTradeClick?: () => void;
 }
 
-export default function MusicCoinCard({
+export default function SongcoinCard({
   coinAddress,
   name,
   symbol,
@@ -42,7 +42,7 @@ export default function MusicCoinCard({
   showHoldings = false,
   className = "",
   onTradeClick
-}: MusicCoinCardProps) {
+}: SongcoinCardProps) {
   const { currentTrack, isPlaying, toggle } = useAudioPlayer();
   const [imageError, setImageError] = useState(false);
 

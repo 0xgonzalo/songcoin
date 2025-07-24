@@ -18,13 +18,13 @@ export async function GET(request: NextRequest) {
       description = 'Create your songcoins with Zora';
       break;
     case 'explore-coins':
-      title = 'Explore Music Coins';
+      title = 'Explore Songcoins';
       subtitle = 'Discover & Trade Artist Tokens';
       description = 'Find your favorite artists and invest in their music';
       break;
     case 'signin':
       title = 'Connect Your Wallet';
-      subtitle = 'Start Creating Music Coins';
+      subtitle = 'Start Creating Songcoins';
       description = 'Join the decentralized music economy';
       break;
     case 'learn-more':

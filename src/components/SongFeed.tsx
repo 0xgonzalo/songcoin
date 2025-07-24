@@ -138,7 +138,7 @@ function FeaturedSongs({ tracks, onTrackClick }: { tracks: Track[]; onTrackClick
   );
 }
 
-export default function MusicFeed() {
+export default function SongFeed() {
   const [selectedGenre, setSelectedGenre] = useState("Ambient");
   const [tracks] = useState(mockTracks);
   const [expandedTrackId, setExpandedTrackId] = useState<string | null>(null);

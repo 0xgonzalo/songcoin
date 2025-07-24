@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import Link from 'next/link';
 import { useZoraEvents } from '~/hooks/useZoraEvents';
-import MusicCoinCard from '~/components/MusicCoinCard';
+import SongcoinCard from '~/components/SongcoinCard';
 import { Loader2, Music, User, Wallet, ExternalLink } from 'lucide-react';
 
 type TabType = 'created' | 'holdings';
@@ -55,7 +55,7 @@ export default function ProfilePage() {
     };
     
     return (
-      <MusicCoinCard
+                          <SongcoinCard
         key={typedCoin.coinAddress}
         coinAddress={typedCoin.coinAddress}
         name={typedCoin.name}
@@ -93,7 +93,7 @@ export default function ProfilePage() {
             <Wallet className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-white mb-2">Connect Your Wallet</h2>
             <p className="text-gray-400 mb-6">
-              Please connect your wallet to view your profile and manage your music coins.
+              Please connect your wallet to view your profile and manage your songcoins.
             </p>
             <Link
               href="/"
@@ -211,7 +211,7 @@ export default function ProfilePage() {
                     <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-white font-semibold mb-2">No Coins Created Yet</h3>
                     <p className="text-gray-400 text-sm mb-4">
-                      Start creating your first music coin and build your portfolio.
+                      Start creating your first songcoin and build your portfolio.
                     </p>
                     <Link
                       href="/create"
@@ -231,7 +231,7 @@ export default function ProfilePage() {
                     <Wallet className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-white font-semibold mb-2">No Holdings Yet</h3>
                     <p className="text-gray-400 text-sm mb-4">
-                      Start trading music coins to build your portfolio.
+                      Start trading songcoins to build your portfolio.
                     </p>
                     <Link
                       href="/"

@@ -26,7 +26,7 @@ import {
 export default function CreatePage() {
   const { address, isConnected } = useAccount();
   const { 
-    createMusicCoin, 
+    createSongcoin, 
     isCreatingCoin, 
     createCoinSuccess,
     createdCoinAddress
@@ -347,12 +347,12 @@ export default function CreatePage() {
         initialPurchaseWei
       };
 
-      await createMusicCoin(coinData);
+      await createSongcoin(coinData);
       setCurrentStep('Coin created successfully!');
 
     } catch (err) {
       console.error('❌ Coin creation error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create music coin';
+              const errorMessage = err instanceof Error ? err.message : 'Failed to create songcoin';
       setError(errorMessage);
     } finally {
       setIsUploading(false);
@@ -374,7 +374,7 @@ export default function CreatePage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-4">Create Music Coin</h1>
+          <h1 className="text-4xl font-bold text-white mb-4">Create Songcoin</h1>
           <p className="text-gray-300">Upload your music and create a tradeable coin</p>
         </div>
 
@@ -382,7 +382,7 @@ export default function CreatePage() {
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 text-center">
             <LogIn className="w-16 h-16 text-white mx-auto mb-6" />
             <h2 className="text-2xl font-bold text-white mb-4">Connect Your Wallet</h2>
-            <p className="text-gray-300 mb-6">You need to connect your wallet to create a music coin</p>
+                          <p className="text-gray-300 mb-6">You need to connect your wallet to create a songcoin</p>
           </div>
         ) : (
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8">
