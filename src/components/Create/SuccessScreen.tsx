@@ -21,7 +21,7 @@ export default function SuccessScreen({
         </div>
         <h2 className="text-2xl font-bold text-white mb-4">Coin Created Successfully!</h2>
         <p className="text-gray-300 mb-6">
-          Your {createMode === 'single' ? 'music' : 'album'} coin has been created and is now live on the blockchain.
+          Your {createMode === 'single' ? 'song' : 'album'} coin has been created and is now live on the blockchain.
         </p>
         <div className="bg-black/20 rounded-lg p-4 mb-6">
           <p className="text-sm text-gray-400 mb-2">Coin Address:</p>
