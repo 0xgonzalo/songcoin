@@ -28,8 +28,8 @@ export default function CreateSubmitButton({
       className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-4 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
     >
       {isUploading || isCreatingCoin 
-        ? `Creating ${createMode === 'single' ? 'Music' : 'Album'} Coin...` 
-        : `Create ${createMode === 'single' ? 'Music' : 'Album'} Coin`}
+        ? `Creating ${createMode === 'single' ? 'Song' : 'Album'} Coin...` 
+        : `Create ${createMode === 'single' ? 'Song' : 'Album'} Coin`}
     </button>
   );
 } 
